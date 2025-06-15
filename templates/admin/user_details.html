@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Details - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #111827;
+            color: #f9fafb;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-trial {
+            background-color: #F59E0B;
+            color: #1F2937;
+        }
+        .badge-active {
+            background-color: #10B981;
+            color: white;
+        }
+        .badge-expired {
+            background-color: #EF4444;
+            color: white;
+        }
+        .badge-pending {
+            background-color: #3B82F6;
+            color: white;
+        }
+        
+        .table-header {
+            background-color: #374151;
+        }
+        
+        .table-row:hover {
+            background-color: #374151;
+        }
+        
+        .card {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 0.5rem;
+        }
+        
+        /* Button styling consistency */
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background-color: #4338ca;
+        }
+        
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        
+        .btn-danger {
+            background-color: #dc2626;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <!-- Main Content Area -->
+    <main class="flex items-center justify-center min-h-screen p-4 md:p-8">
+        <div class="w-full max-w-6xl">
+            <div class="bg-gray-800 rounded-lg shadow-xl p-6 md:p-10 border border-gray-700">
+                <!-- Back Button -->
+                <div class="mb-6">
+                    <a href="{{ url_for('admin_panel') }}" class="btn-secondary px-4 py-2 rounded-md font-medium inline-flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                        </svg>
+                        Back to Admin Panel
+                    </a>
+                </div>
+
+                <!-- Header -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-100">User Details</h1>
+                        <p class="text-gray-400">Database: {{ db }} | User: {{ user }}</p>
+                    </div>
+                    <div class="mt-4 md:mt-0">
+                        {% if status == 'Trial Expired' %}
+                            <span class="badge badge-expired">Trial Expired</span>
+                        {% elif status == 'Trial Active' %}
+                            <span class="badge badge-trial">Trial Active</span>
+                        {% elif status == 'Active' %}
+                            <span class="badge badge-active">Active</span>
+                        {% elif status == 'Expired' %}
+                            <span class="badge badge-expired">Expired</span>
+                        {% else %}
+                            <span class="badge badge-pending">Unknown Status</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-6 space-y-3">
+                            {% for category, message in messages %}
+                                <div class="bg-{{ 'green' if category == 'success' else 'yellow' if category == 'warning' else 'red' }}-900 border border-{{ 'green' if category == 'success' else 'yellow' if category == 'warning' else 'red' }}-600 text-{{ 'green' if category == 'success' else 'yellow' if category == 'warning' else 'red' }}-200 px-4 py-3 rounded-lg shadow-sm">
+                                    <span class="block sm:inline">{{ message }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- User Information Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- Account Status Card -->
+                    <div class="card p-6">
+                        <h2 class="text-xl font-semibold text-gray-100 mb-4">Account Status</h2>
+                        <div class="space-y-4">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Membership Plan:</span>
+                                <span class="font-medium">{{ user_settings.membership_plan if user_settings else 'Trial' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Payment Status:</span>
+                                <span class="font-medium">{{ user_settings.payment_status if user_settings else 'N/A' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Last Payment:</span>
+                                <span class="font-medium">
+                                    {% if user_settings and user_settings.last_payment_date %}
+                                        {{ user_settings.last_payment_date.strftime('%Y-%m-%d') }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Next Renewal:</span>
+                                <span class="font-medium">
+                                    {% if user_settings and user_settings.next_renewal_date %}
+                                        {{ user_settings.next_renewal_date.strftime('%Y-%m-%d') }}
+                                        ({{ (user_settings.next_renewal_date - now).days }} days left)
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Usage Statistics Card -->
+                    <div class="card p-6">
+                        <h2 class="text-xl font-semibold text-gray-100 mb-4">Usage Statistics</h2>
+                        <div class="space-y-4">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Total Students:</span>
+                                <span class="font-medium">{{ student_count }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Information Records:</span>
+                                <span class="font-medium">{{ info_count }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Account Created:</span>
+                                <span class="font-medium">
+                                    {% if user_settings and user_settings.created_at %}
+                                        {{ user_settings.created_at.strftime('%Y-%m-%d') }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Last Updated:</span>
+                                <span class="font-medium">
+                                    {% if user_settings and user_settings.updated_at %}
+                                        {{ user_settings.updated_at.strftime('%Y-%m-%d') }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment History -->
+                <div class="card p-6 mb-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold text-gray-100">Payment History</h2>
+                    </div>
+                    
+                    {% if payments %}
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-600">
+                                <thead class="table-header bg-gray-600">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Date</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Order ID</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Payment ID</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Plan</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Amount</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Status</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Invoice</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-gray-700 divide-y divide-gray-600">
+                                    {% for payment in payments %}
+                                        <tr class="hover:bg-gray-600 transition-colors duration-200">
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">
+                                                {{ payment.created_at.strftime('%Y-%m-%d') }}
+                                            </td>
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200 font-mono">
+                                                {{ payment.order_id }}
+                                            </td>
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200 font-mono">
+                                                {{ payment.payment_id if payment.payment_id else 'N/A' }}
+                                            </td>
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">
+                                                {{ payment.plan_type if payment.plan_type else 'N/A' }}
+                                            </td>
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200 font-medium">
+                                                ₹{{ payment.amount | floatformat(2) }}
+                                            </td>
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm">
+                                                {% if payment.status == 'success' %}
+                                                    <span class="badge badge-active">Success</span>
+                                                {% elif payment.status == 'pending' %}
+                                                    <span class="badge badge-pending">Pending</span>
+                                                {% else %}
+                                                    <span class="badge badge-expired">Failed</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">
+                                                {% if payment.invoice_number %}
+                                                    <a href="{{ url_for('download_invoice', db=db, invoice_id=payment.id) }}" 
+                                                       class="text-indigo-400 hover:text-indigo-300">
+                                                        {{ payment.invoice_number }}
+                                                    </a>
+                                                {% else %}
+                                                    N/A
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8">
+                            <p class="text-gray-400">No payment history found</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="card p-6 border border-red-900">
+                    <h2 class="text-xl font-semibold text-red-400 mb-4">Danger Zone</h2>
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                        <div class="mb-4 md:mb-0">
+                            <h3 class="text-lg font-medium text-gray-100">Reset User Database</h3>
+                            <p class="text-gray-400 text-sm">This will delete all user data and reset the database to its initial state.</p>
+                        </div>
+                        <button class="btn-danger px-4 py-2 rounded-md font-medium" 
+                                onclick="if(confirm('Are you sure you want to reset this user\\'s database? ALL DATA WILL BE LOST!')) { document.getElementById('resetForm').submit(); }">
+                            Reset Database
+                        </button>
+                        <form id="resetForm" method="POST" action="{{ url_for('admin_panel') }}" class="hidden">
+                            <input type="hidden" name="action" value="reset">
+                            <input type="hidden" name="db_name" value="{{ db }}">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

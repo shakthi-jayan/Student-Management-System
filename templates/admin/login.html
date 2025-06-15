@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #1E293B; /* Dark background */
+            color: #E5E7EB; /* Light text */
+        }
+        .shadow-lg {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Subtle shadow */
+        }
+        .bg-gray-800 {
+            background-color: #2D3748; /* Dark container background */
+        }
+        .bg-gray-700 {
+            background-color: #374151; /* Dark input background */
+        }
+        .border-gray-700 {
+            border-color: #374151; /* Darker border */
+        }
+        .bg-indigo-600 {
+            background-color: #4F46E5; /* Indigo button */
+        }
+        .hover\:bg-indigo-700:hover {
+            background-color: #4338CA; /* Darker indigo hover */
+        }
+        .focus\:ring-indigo-300 {
+            --tw-ring-color: #6366F1; /* Indigo focus ring */
+        }
+        .text-gray-100 {
+            color: #E5E7EB; /* Light text */
+        }
+        .text-gray-300 {
+            color: #D1D5DB; /* Lighter text */
+        }
+        .bg-green-900 {
+            background-color: #065F46; /* Dark green for success messages */
+        }
+        .border-green-600 {
+            border-color: #059669; /* Green border */
+        }
+        .text-green-200 {
+            color: #A7F3D0; /* Light green text */
+        }
+        .bg-red-900 {
+            background-color: #991B1B; /* Dark red for error messages */
+        }
+        .border-red-600 {
+            border-color: #DC2626; /* Red border */
+        }
+        .text-red-200 {
+            color: #FECACA; /* Light red text */
+        }
+        input[type="text"].border-gray-700,
+        input[type="password"].border-gray-700 {
+            background-color: #374151; /* Dark input background */
+            color: #E5E7EB; /* Light input text */
+            border-color: #4B5563; /* Darker input border */
+        }
+        .placeholder-gray-400::placeholder {
+            color: #9CA3AF; /* Placeholder text color */
+        }
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-field label {
+            margin-bottom: 0.5rem;
+        }
+        .form-field input {
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="font-sans flex items-center justify-center h-screen">
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-96">
+        <h1 class="text-2xl font-bold text-gray-100 mb-6 text-center">Admin Login</h1>
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-4 space-y-2">
+                    {% for category, message in messages %}
+                        <div class="p-2 rounded-md bg-{{ 'green' if category == 'success' else 'red' }}-900 border border-{{ 'green' if category == 'success' else 'red' }}-600 text-{{ 'green' if category == 'success' else 'red' }}-200">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" action="{{ url_for('admin_login') }}">
+            <div class="grid grid-cols-3 gap-6 mb-4">
+                <div class="form-field col-span-3">
+                    <label for="username" class="block text-sm font-medium text-gray-300">Username</label>
+                    <input type="text" id="username" name="username" 
+                           class="mt-1 p-2 block w-full border border-gray-700 rounded-md focus:ring-indigo-500 focus:border-indigo-500 bg-gray-700 text-gray-100 placeholder-gray-400" 
+                           required>
+                </div>
+                <div class="form-field col-span-3">
+                    <label for="password" class="block text-sm font-medium text-gray-300">Password</label>
+                    <input type="password" id="password" name="password" 
+                           class="mt-1 p-2 block w-full border border-gray-700 rounded-md focus:ring-indigo-500 focus:border-indigo-500 bg-gray-700 text-gray-100 placeholder-gray-400" 
+                           required>
+                </div>
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300">
+                Login
+            </button>
+        </form>
+    </div>
+</body>
+</html>

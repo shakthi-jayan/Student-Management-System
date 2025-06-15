@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Student</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-8">
+        <h1 class="text-3xl font-bold mb-6">Add New Student</h1>
+        <form method="POST">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="enroll_no" class="block text-gray-700">Enroll No</label>
+                    <input type="text" id="enroll_no" name="enroll_no" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="course" class="block text-gray-700">Course</label>
+                    <input type="text" id="course" name="course" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="sex" class="block text-gray-700">Sex</label>
+                    <input type="text" id="sex" name="sex" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="name" class="block text-gray-700">Name</label>
+                    <input type="text" id="name" name="name" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="father_name" class="block text-gray-700">Father Name</label>
+                    <input type="text" id="father_name" name="father_name" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="address1" class="block text-gray-700">Address 1</label>
+                    <input type="text" id="address1" name="address1" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="address2" class="block text-gray-700">Address 2</label>
+                    <input type="text" id="address2" name="address2" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+                <div>
+                    <label for="city" class="block text-gray-700">City</label>
+                    <input type="text" id="city" name="city" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="pincode" class="block text-gray-700">Pincode</label>
+                    <input type="text" id="pincode" name="pincode" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="qualification" class="block text-gray-700">Qualification</label>
+                    <input type="text" id="qualification" name="qualification" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="date_of_join" class="block text-gray-700">Date of Join</label>
+                    <input type="date" id="date_of_join" name="date_of_join" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="age" class="block text-gray-700">Age</label>
+                    <input type="number" id="age" name="age" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="scheme" class="block text-gray-700">Scheme</label>
+                    <input type="text" id="scheme" name="scheme" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="date_of_birth" class="block text-gray-700">Date of Birth</label>
+                    <input type="date" id="date_of_birth" name="date_of_birth" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="concession" class="block text-gray-700">Concession</label>
+                    <input type="number" id="concession" name="concession" class="w-full p-2 border border-gray-300 rounded">
+                </div>
+                <div>
+                    <label for="net_fees" class="block text-gray-700">Net Fees</label>
+                    <input type="number" id="net_fees" name="net_fees" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+                <div>
+                    <label for="total_fees" class="block text-gray-700">Total Fees</label>
+                    <input type="number" id="total_fees" name="total_fees" class="w-full p-2 border border-gray-300 rounded" required>
+                </div>
+            </div>
+            <button type="submit" class="mt-6 bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">Add Student</button>
+        </form>
+    </div>
+</body>
+</html>

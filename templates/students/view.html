@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Students</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-8">
+        <h1 class="text-3xl font-bold mb-6">Student List</h1>
+        <a href="{{ url_for('add_student', db=request.args.get('db')) }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add Student</a>
+        <table class="min-w-full mt-6 bg-white rounded shadow-md">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="p-4 text-left">Enroll No</th>
+                    <th class="p-4 text-left">Name</th>
+                    <th class="p-4 text-left">Course</th>
+                    <th class="p-4 text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr class="border-b">
+                    <td class="p-4">{{ student.enroll_no }}</td>
+                    <td class="p-4">{{ student.name }}</td>
+                    <td class="p-4">{{ student.course }}</td>
+                    <td class="p-4">
+                        <a href="{{ url_for('update_student', enroll_no=student.enroll_no, db=request.args.get('db')) }}" class="text-blue-500 hover:underline">Edit</a> |
+                        <a href="{{ url_for('delete_student', enroll_no=student.enroll_no, db=request.args.get('db')) }}" class="text-red-500 hover:underline">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

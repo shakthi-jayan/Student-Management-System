@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Student Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            background-color: #1E293B; /* Dark background */
+            color: #E5E7EB; /* Light text */
+        }
+        .shadow-lg {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Subtle shadow */
+        }
+        .bg-gray-800 {
+            background-color: #2D3748; /* Dark container background */
+        }
+        .bg-gray-700 {
+            background-color: #374151; /* Dark input background */
+        }
+        .border-gray-700 {
+            border-color: #374151; /* Darker border */
+        }
+        .bg-indigo-600 {
+            background-color: #4F46E5; /* Indigo button */
+        }
+        .hover\:bg-indigo-700:hover {
+            background-color: #4338CA; /* Darker indigo hover */
+        }
+        .focus\:ring-indigo-300 {
+            --tw-ring-color: #6366F1; /* Indigo focus ring */
+        }
+        .text-gray-100 {
+            color: #E5E7EB; /* Light text */
+        }
+        .text-gray-300 {
+            color: #D1D5DB; /* Lighter text */
+        }
+        .text-gray-400 {
+            color: #9CA3AF; /* Even lighter text */
+        }
+        input[type="text"], input[type="email"], input[type="password"] {
+            background-color: #374151; /* Dark input background */
+            color: #E5E7EB; /* Light input text */
+            border-color: #4B5563; /* Darker input border */
+        }
+        input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus {
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        .placeholder-gray-400::placeholder {
+            color: #9CA3AF; /* Placeholder text color */
+        }
+        .plan-card {
+            background-color: #374151;
+            border-color: #4B5563;
+        }
+        .plan-card:hover {
+            border-color: #4F46E5;
+        }
+        .plan-card.selected {
+            border-color: #4F46E5;
+            background-color: #312E81;
+        }
+        .login-btn {
+            width: 100%;
+            background-color: #4B5563;
+            color: white;
+            padding: 8px 0;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            margin-top: 12px;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+        .login-btn:hover {
+            background-color: #6B7280;
+        }
+    </style>
+</head>
+<body class="font-sans min-h-screen flex items-center justify-center mt-5 pt-4">
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-100">Create Your Account</h1>
+            <p class="text-gray-400 mt-2">Start your 7-day free trial</p>
+        </div>
+
+        <!-- Registration Form -->
+        <form id="registrationForm" class="space-y-4">
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-300">Email Address</label>
+                <input type="email" id="email" name="email" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-gray-700 text-gray-100 placeholder-gray-400">
+            </div>
+            
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-300">Username</label>
+                <input type="text" id="username" name="username" required minlength="4"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-gray-700 text-gray-100 placeholder-gray-400">
+            </div>
+            
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-300">Password</label>
+                <input type="password" id="password" name="password" required minlength="8"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-gray-700 text-gray-100 placeholder-gray-400">
+            </div>
+            
+            <div>
+                <label for="confirm_password" class="block text-sm font-medium text-gray-300">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 bg-gray-700 text-gray-100 placeholder-gray-400">
+            </div>
+
+            <!-- Membership Plan Selection -->
+            <div class="mt-6">
+                <h3 class="text-lg font-medium text-gray-100 mb-3">Select Membership Plan</h3>
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="relative">
+                        <input class="peer hidden" id="monthly_plan" type="radio" name="membership_plan" value="monthly" checked>
+                        <label for="monthly_plan" class="block cursor-pointer rounded-lg border plan-card p-4 hover:border-indigo-500 peer-checked:border-indigo-500 peer-checked:bg-indigo-900">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="font-medium text-gray-100">Monthly Plan</span>
+                                    <p class="text-sm text-gray-400 mt-1">₹699/month after trial</p>
+                                </div>
+                                <span class="text-indigo-400 font-medium">7-day free trial</span>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div class="relative">
+                        <input class="peer hidden" id="yearly_plan" type="radio" name="membership_plan" value="yearly">
+                        <label for="yearly_plan" class="block cursor-pointer rounded-lg border plan-card p-4 hover:border-indigo-500 peer-checked:border-indigo-500 peer-checked:bg-indigo-900">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="font-medium text-gray-100">Yearly Plan</span>
+                                    <p class="text-sm text-gray-400 mt-1">₹7,999/year</p>
+                                </div>
+                                <span class="text-indigo-400 font-medium">7-day free trial</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center">
+                <input id="terms" name="terms" type="checkbox" required
+                    class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-600 rounded bg-gray-700">
+                <label for="terms" class="ml-2 block text-sm text-gray-300">
+                    I agree to the <a href="#" class="text-indigo-400 hover:text-indigo-300">Terms and Conditions</a>
+                </label>
+            </div>
+
+            <div>
+                <button type="button" onclick="processRegistration()"
+                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Start Free Trial
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-6 text-center">
+            <p class="text-sm text-gray-400">
+                Already have an account? 
+            </p>
+            <button type="button" onclick="window.location.href='{{ url_for('login') }}'" class="login-btn">
+                Sign in
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Process registration form
+        function processRegistration() {
+            const form = document.getElementById('registrationForm');
+            const email = form.email.value;
+            const username = form.username.value;
+            const password = form.password.value;
+            const confirmPassword = form.confirm_password.value;
+            const plan = form.membership_plan.value;
+            
+            // Validate form
+            if (!email || !username || !password || !confirmPassword) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Please fill in all fields',
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    background: '#2D3748',
+                    color: '#E5E7EB'
+                });
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Passwords do not match',
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    background: '#2D3748',
+                    color: '#E5E7EB'
+                });
+                return;
+            }
+            
+            if (password.length < 8) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Password must be at least 8 characters',
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    background: '#2D3748',
+                    color: '#E5E7EB'
+                });
+                return;
+            }
+            
+            if (!form.terms.checked) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'You must agree to the terms and conditions',
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    background: '#2D3748',
+                    color: '#E5E7EB'
+                });
+                return;
+            }
+            
+            // Submit registration to server
+            submitRegistration();
+        }
+        
+        // Submit registration to server
+        function submitRegistration() {
+            const form = document.getElementById('registrationForm');
+            const formData = new FormData(form);
+
+            fetch("{{ url_for('register') }}", {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Registration Successful',
+                        text: 'Your 7-day free trial has started. You can now login with your credentials.',
+                        icon: 'success',
+                        background: '#2D3748',
+                        color: '#E5E7EB'
+                    }).then(() => {
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Registration Failed',
+                        text: data.message || 'Please try again',
+                        icon: 'error',
+                        background: '#2D3748',
+                        color: '#E5E7EB'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: error.message || 'An error occurred during registration',
+                    icon: 'error',
+                    background: '#2D3748',
+                    color: '#E5E7EB'
+                });
+            });
+        }
+    </script>
+</body>
+</html>

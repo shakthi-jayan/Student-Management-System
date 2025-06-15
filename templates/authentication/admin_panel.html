@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #1E293B; /* Dark background */
+            color: #E5E7EB; /* Light text */
+        }
+        aside.bg-gray-800 {
+            background-color: #111827; /* Darker sidebar background */
+        }
+        .shadow-lg {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Subtle shadow */
+        }
+        .bg-gray-800 {
+            background-color: #2D3748; /* Dark container background */
+        }
+        .bg-gray-700 {
+            background-color: #374151; /* Dark input background */
+        }
+        .border-gray-700 {
+            border-color: #374151; /* Darker border */
+        }
+        .bg-indigo-600 {
+            background-color: #4F46E5; /* Indigo button */
+        }
+        .hover\:bg-indigo-700:hover {
+            background-color: #4338CA; /* Darker indigo hover */
+        }
+        .focus\:ring-indigo-300 {
+            --tw-ring-color: #6366F1; /* Indigo focus ring */
+        }
+        .text-gray-100 {
+            color: #E5E7EB; /* Light text */
+        }
+        .text-gray-300 {
+            color: #D1D5DB; /* Lighter text */
+        }
+        input[type="text"].border-gray-700,
+        input[type="password"].border-gray-700 {
+            background-color: #374151; /* Dark input background */
+            color: #E5E7EB; /* Light input text */
+            border-color: #4B5563; /* Darker input border */
+        }
+        .placeholder-gray-400::placeholder {
+            color: #9CA3AF; /* Placeholder text color */
+        }
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-field label {
+            margin-bottom: 0.5rem;
+        }
+        .form-field input {
+            width: 100%;
+        }
+        .user-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .user-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #4B5563;
+        }
+        .user-list li:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body class="font-sans">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="bg-gray-800 text-white w-64 p-4 flex-shrink-0 hidden md:block min-h-screen">
+            <div class="flex items-center justify-center mb-6">
+                <!-- Placeholder for logo -->
+            </div>
+            {% include "nav.html" %}
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-8">
+            <div class="w-full max-w-5xl">
+                <div class="bg-gray-800 rounded-lg shadow-lg p-10">
+                    <h1 class="text-4xl font-bold text-gray-100 mb-8 text-center">Admin Panel</h1>
+
+                    <!-- Add New User -->
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-semibold text-gray-100 mb-4">Create New User</h2>
+                        <form method="POST" action="/admin/create_user" class="mb-8">
+                            <div class="grid grid-cols-3 gap-6 items-end">
+                                <div class="form-field col-span-1">
+                                    <label for="username" class="block text-lg font-medium text-gray-300">Username</label>
+                                    <input type="text" id="username" name="username" 
+                                           class="mt-2 block w-full p-3 border border-gray-700 rounded-md focus:ring-indigo-500 focus:border-indigo-500 bg-gray-700 text-gray-100 placeholder-gray-400"
+                                           required>
+                                </div>
+                                <div class="form-field col-span-1">
+                                    <label for="password" class="block text-lg font-medium text-gray-300">Password</label>
+                                    <input type="password" id="password" name="password" 
+                                           class="mt-2 block w-full p-3 border border-gray-700 rounded-md focus:ring-indigo-500 focus:border-indigo-500 bg-gray-700 text-gray-100 placeholder-gray-400"
+                                           required>
+                                </div>
+                                <div class="form-field">
+                                    <button type="submit" class="w-full bg-indigo-600 text-white px-4 py-3 rounded-md hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300">
+                                        Create User
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- List of Existing Users -->
+                    <div>
+                        <h2 class="text-2xl font-semibold text-gray-100 mb-4">Existing Users</h2>
+                        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                            {% if users %}
+                                <ul class="user-list">
+                                    {% for user in users %}
+                                        <li class="text-gray-300">{{ user }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p class="text-gray-400">No users found.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

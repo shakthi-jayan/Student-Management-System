@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Student</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Light mode styles */
+        .light body {
+            background-color: #f3f4f6;
+            color: #111827;
+        }
+        .light .content-container {
+            background-color: #ffffff;
+        }
+        .light .text-primary {
+            color: #111827;
+        }
+        .light .text-secondary {
+            color: #4b5563;
+        }
+        .light .border-primary {
+            border-color: #e5e7eb;
+        }
+        .light .bg-primary {
+            background-color: #ffffff;
+        }
+        .light .bg-secondary {
+            background-color: #f9fafb;
+        }
+        .light .bg-input {
+            background-color: #ffffff;
+            border-color: #e5e7eb;
+            color: #111827;
+        }
+        .light .bg-radio {
+            background-color: #ffffff;
+            border-color: #d1d5db;
+        }
+        .light .bg-success {
+            background-color: #dcfce7;
+            border-color: #16a34a;
+            color: #166534;
+        }
+        .light .bg-error {
+            background-color: #fee2e2;
+            border-color: #dc2626;
+            color: #991b1b;
+        }
+        .light .nav-container {
+            background-color: #f3f4f6;
+            color: #111827;
+        }
+        .light .nav-link {
+            color: #4b5563;
+        }
+        .light .nav-link:hover {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        .light .nav-link button {
+            color: #4b5563;
+        }
+        .light .nav-link:hover button {
+            color: #1e40af;
+        }
+        .light .text-gray-400 {
+            color: #6b7280;
+        }
+        .light .border-gray-600 {
+            border-color: #d1d5db;
+        }
+        .light .group-hover\:border-indigo-500 {
+            border-color: #6366f1;
+        }
+
+        /* Dark mode styles */
+        .dark body {
+            background-color: #1e293b;
+            color: #e5e7eb;
+        }
+        .dark .content-container {
+            background-color: #1f2937;
+        }
+        .dark .text-primary {
+            color: #e5e7eb;
+        }
+        .dark .text-secondary {
+            color: #d1d5db;
+        }
+        .dark .border-primary {
+            border-color: #374151;
+        }
+        .dark .bg-primary {
+            background-color: #1f2937;
+        }
+        .dark .bg-secondary {
+            background-color: #111827;
+        }
+        .dark .bg-input {
+            background-color: #374151;
+            border-color: #4b5563;
+            color: #e5e7eb;
+        }
+        .dark .bg-radio {
+            background-color: #374151;
+            border-color: #4b5563;
+        }
+        .dark .bg-success {
+            background-color: #064e3b;
+            border-color: #16a34a;
+            color: #22c55e;
+        }
+        .dark .bg-error {
+            background-color: #7f1d1d;
+            border-color: #dc2626;
+            color: #f87171;
+        }
+        .dark .nav-container {
+            background-color: #111827;
+            color: #d1d5db;
+        }
+        .dark .nav-link {
+            color: #d1d5db;
+        }
+        .dark .nav-link:hover {
+            background-color: #4338ca;
+            color: #ffffff;
+        }
+        .dark .nav-link button {
+            color: #d1d5db;
+        }
+        .dark .nav-link:hover button {
+            color: #ffffff;
+        }
+        .dark .text-gray-400 {
+            color: #9ca3af;
+        }
+        .dark .border-gray-600 {
+            border-color: #4b5563;
+        }
+        .dark .group-hover\:border-indigo-500 {
+            border-color: #6366f1;
+        }
+
+        /* Common styles */
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-field label {
+            margin-bottom: 0.5rem;
+        }
+        .form-field input,
+        .form-field select {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            border-width: 1px;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+        }
+        .radio-group {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .radio-option {
+            display: flex;
+            align-items: center;
+        }
+        .form-radio {
+            margin-right: 0.5rem;
+            height: 1.25rem;
+            width: 1.25rem;
+        }
+        .uppercase-input {
+            text-transform: uppercase;
+        }
+    </style>
+    <script>
+        function validateForm() {
+            const totalFees = parseFloat(document.getElementById('total_fees').value) || 0;
+            const netFees = parseFloat(document.getElementById('net_fees').value) || 0;
+            const billNumber = document.getElementById('bill_number').value.trim();
+
+            if (netFees > totalFees) {
+                alert('Net fees cannot exceed total fees');
+                return false;
+            }
+
+            if (netFees > 0 && billNumber === '') {
+                alert('Bill number is required when net fees is provided');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Set current date as default for joining date
+        function setDefaultJoinDate() {
+            const dateOfJoinInput = document.getElementById('date_of_join');
+            if (dateOfJoinInput && !dateOfJoinInput.value) {
+                const today = new Date();
+                const formattedDate = today.toISOString(). hundred('T')[0];
+                dateOfJoinInput.value = formattedDate;
+            }
+        }
+    </script>
+</head>
+<body class="font-sans light">
+    <div class="flex min-h-screen">
+        <!-- Sidebar (Navigation Bar) -->
+        <aside class="w-64 p-4 flex-shrink-0 min-h-screen">
+            <nav class="nav-container w-64 fixed inset-y-0 left-0 flex flex-col h-screen shadow-lg">
+                <!-- Logo Section -->
+                <div class="flex flex-col items-center mb-6 mt-6">
+                    <a href="{{ url_for('logo_upload', db=db) }}" class="group">
+                        <img src="{{ url_for('static', filename=logo_path) }}" alt="Logo" class="w-32 h-auto border-2 border-gray-600 group-hover:border-indigo-500 transition duration-200">
+                    </a>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="flex flex-col space-y-2 flex-grow px-4">
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.25 2.25L15 6" />
+                        </svg>
+                        <a href="{{ url_for('user_dashboard', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Application Dashboard</a>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                        </svg>
+                        <a href="{{ url_for('information_dashboard', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Information Dashboard</a>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 .75h.008v.008H18v-.008zm-12 0h.008v.008H6v-.008z" />
+                        </svg>
+                        <a href="{{ url_for('fees', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Student Fees</a>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.503 3.503 12 4.125 12h2.25c.621 0 1.125.503 1.125 1.125v6.75C7.5 20.497 6.997 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.497 3 21 3.503 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                        </svg>
+                        <a href="{{ url_for('analytics_dashboard', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Analytics Dashboard</a>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <a href="{{ url_for('account', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Account</a>
+                    </div>
+
+                    <!-- Dark/Light Mode Toggle -->
+                    <div class="flex items-center space-x-3">
+                        <svg id="darkIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                        </svg>
+                        <svg id="lightIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400 hidden">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                        </svg>
+                        <button id="themeToggle" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200 flex-grow">
+                            <span id="themeText">Toggle Theme</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center space-x-3 mt-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                        </svg>
+                        <a href="{{ url_for('logout') }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Logout</a>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex items-center justify-center p-4">
+            <div class="w-full max-w-5xl">
+                <div class="content-container rounded-lg shadow-lg p-8">
+                    <h1 class="text-4xl font-bold text-primary mb-8 text-center">Add Student</h1>
+
+                    <!-- Flash messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            <div class="mb-6 space-y-3">
+                                {% for category, message in messages %}
+                                    <div class="px-4 py-3 rounded-lg shadow-sm border 
+                                        {% if category == 'success' %}bg-success{% else %}bg-error{% endif %}">
+                                        <span class="block sm:inline">{{ message }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- Student form -->
+                    <form id="student_form" method="POST" action="{{ url_for('application_form', db=db) }}" onsubmit="return validateForm()" class="grid grid-cols-3 gap-6">
+                        <!-- Column 1 -->
+                        <div class="form-field">
+                            <label for="enroll_no" class="block text-lg font-medium text-secondary">Enrollment Number</label>
+                            <input type="text" id="enroll_no" name="enroll_no" value="{{ student.enroll_no if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 uppercase-input" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="name" class="block text-lg font-medium text-secondary">Name</label>
+                            <input type="text" id="name" name="name" value="{{ student.name if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 uppercase-input" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="father_name" class="block text-lg font-medium text-secondary">Father's Name</label>
+                            <input type="text" id="father_name" name="father_name" value="{{ student.father_name if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 uppercase-input">
+                        </div>
+                        <div class="form-field">
+                            <label for="course" class="block text-lg font-medium text-secondary">Course</label>
+                            <input type="text" id="course" name="course" value="{{ student.course if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 uppercase-input" required>
+                        </div>
+                        <div class="form-field">
+                            <label class="block text-lg font-medium text-secondary">Sex</label>
+                            <div class="radio-group mt-2">
+                                <div class="radio-option">
+                                    <input type="radio" id="male" name="sex" value="Male" {% if student and student.sex == 'Male' %}checked{% endif %} 
+                                           class="form-radio text-indigo-500 bg-radio" required>
+                                    <label for="male" class="text-secondary">Male</label>
+                                </div>
+                                <div class="radio-option">
+                                    <input type="radio" id="female" name="sex" value="Female" {% if student and student.sex == 'Female' %}checked{% endif %} 
+                                           class="form-radio text-indigo-500 bg-radio" required>
+                                    <label for="female" class="text-secondary">Female</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-field">
+                            <label for="total_fees" class="block text-lg font-medium text-secondary">Total Fees (₹)</label>
+                            <input type="number" id="total_fees" name="total_fees" step="0.01" min="0" value="{{ student.total_fees if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400" required>
+                        </div>
+
+                        <!-- Column 2 -->
+                        <div class="form-field">
+                            <label for="address1" class="block text-lg font-medium text-secondary">Address Line 1</label>
+                            <input type="text" id="address1" name="address1" value="{{ student.address1 if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 uppercase-input">
+                        </div>
+                        <div class="form-field">
+                            <label for="address2" class="block text-lg font-medium text-secondary">Address Line 2</label>
+                            <input type="text" id="address2" name="address2" value="{{ student.address2 if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 uppercase-input">
+                        </div>
+                        <div class="form-field">
+                            <label for="city" class="block text-lg font-medium text-secondary">City</label>
+                            <input type="text" id="city" name="city" value="{{ student.city if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 uppercase-input">
+                        </div>
+                        <div class="form-field">
+                            <label for="pincode" class="block text-lg font-medium text-secondary">Pincode</label>
+                            <input type="text" id="pincode" name="pincode" value="{{ student.pincode if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400">
+                        </div>
+                        <div class="form-field">
+                            <label for="qualification" class="block text-lg font-medium text-secondary">Qualification</label>
+                            <input type="text" id="qualification" name="qualification" value="{{ student.qualification if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 uppercase-input">
+                        </div>
+                        <div class="form-field">
+                            <label for="net_fees" class="block text-lg font-medium text-secondary">Net Fees (₹)</label>
+                            <input type="number" id="net_fees" name="net_fees" step="0.01" min="0" value="{{ student.net_fees if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400">
+                        </div>
+                        <div class="form-field">
+                            <label for="mobile_number1" class="block text-lg font-medium text-secondary">Mobile Number 1 *</label>
+                            <input type="tel" id="mobile_number1" name="mobile_number1" value="{{ student.mobile_number1 if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400" 
+                                   pattern="[0-9]{10}" title="Please enter a valid 10-digit mobile number" required>
+                        </div>
+                        <div class="form-field">
+                            <label for="mobile_number2" class="block text-lg font-medium text-secondary">Mobile Number 2</label>
+                            <input type="tel" id="mobile_number2" name="mobile_number2" value="{{ student.mobile_number2 if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400" 
+                                   pattern="[0-9]{10}" title="Please enter a valid 10-digit mobile number">
+                        </div>
+
+                        <!-- Column 3 -->
+                        <div class="form-field">
+                            <label for="date_of_join" class="block text-lg font-medium text-secondary">Date of Joining</label>
+                            <input type="date" id="date_of_join" name="date_of_join" value="{{ student.date_of_join if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div class="form-field">
+                            <label for="date_of_birth" class="block text-lg font-medium text-secondary">Date of Birth</label>
+                            <input type="date" id="date_of_birth" name="date_of_birth" value="{{ student.date_of_birth if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div class="form-field">
+                            <label for="age" class="block text-lg font-medium text-secondary">Age</label>
+                            <input type="number" id="age" name="age" value="{{ student.age if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400">
+                        </div>
+                        <div class="form-field">
+                            <label for="scheme" class="block text-lg font-medium text-secondary">Scheme</label>
+                            <input type="text" id="scheme" name="scheme" value="{{ student.scheme if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 uppercase-input">
+                        </div>
+                        <div class="form-field">
+                            <label for="concession" class="block text-lg font-medium text-secondary">Concession</label>
+                            <input type="text" id="concession" name="concession" value="{{ student.concession if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 uppercase-input">
+                        </div>
+                        <div class="form-field">
+                            <label for="bill_number" class="block text-lg font-medium text-secondary">Bill Number (for Net Fees)</label>
+                            <input type="text" id="bill_number" name="bill_number" value="{{ student.bill_number if student else '' }}" 
+                                   class="bg-input border-primary focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400 uppercase-input">
+                        </div>
+
+                        <!-- Hidden student_id field -->
+                        <input type="hidden" id="student_id" name="student_id" value="{{ student_id or '' }}">
+
+                        <!-- Submit Button -->
+                        <div class="col-span-3">
+                            <button type="submit" class="w-full btn-primary py-3 rounded-md focus:ring-4 focus:ring-indigo-500 transition duration-200">
+                                {{ 'Update' if student else 'Add' }} Student
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="mt-4 text-center">
+                        <a href="{{ url_for('user_dashboard', db=db) }}" class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 transition duration-200">
+                            ← Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Function to force uppercase
+        function forceUppercase(e) {
+            let start = e.target.selectionStart;
+            let end = e.target.selectionEnd;
+            e.target.value = e.target.value.toUpperCase();
+            e.target.setSelectionRange(start, end);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggle = document.getElementById('themeToggle');
+            const darkIcon = document.getElementById('darkIcon');
+            const lightIcon = document.getElementById('lightIcon');
+            const themeText = document.getElementById('themeText');
+            const html = document.documentElement;
+
+            // Set default join date when page loads
+            setDefaultJoinDate();
+
+            // Check for saved theme preference or use system preference
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+            // Apply initial theme
+            html.classList.remove('light', 'dark');
+            html.classList.add(initialTheme);
+            updateThemeUI(initialTheme);
+
+            // Toggle theme on button click
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+                    html.classList.remove('light', 'dark');
+                    html.classList.add(newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeUI(newTheme);
+                });
+            }
+
+            // Update UI elements based on theme
+            function updateThemeUI(theme) {
+                if (theme === 'dark') {
+                    darkIcon.classList.add('hidden');
+                    lightIcon.classList.remove('hidden');
+                    themeText.textContent = 'Light Mode';
+                } else {
+                    darkIcon.classList.remove('hidden');
+                    lightIcon.classList.add('hidden');
+                    themeText.textContent = 'Dark Mode';
+                }
+            }
+
+            // Listen for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (!localStorage.getItem('theme')) {
+                    const newTheme = e.matches ? 'dark' : 'light';
+                    html.classList.remove('light', 'dark');
+                    html.classList.add(newTheme);
+                    updateThemeUI(newTheme);
+                }
+            });
+
+            // Force uppercase for specific fields
+            const uppercaseFields = ['enroll_no', 'name', 'father_name', 'course', 'city', 
+                                    'qualification', 'scheme', 'concession', 'bill_number'];
+
+            uppercaseFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('input', forceUppercase);
+                    field.addEventListener('keyup', forceUppercase);
+                    // Set initial value to uppercase in case it's pre-filled
+                    if (field.value) {
+                        field.value = field.value.toUpperCase();
+                    }
+                }
+            });
+        });
+
+        function validateForm() {
+            const totalFees = parseFloat(document.getElementById('total_fees').value) || 0;
+            const netFees = parseFloat(document.getElementById('net_fees').value) || 0;
+            const billNumber = document.getElementById('bill_number').value.trim();
+
+            if (netFees > totalFees) {
+                alert('Net fees cannot exceed total fees');
+                return false;
+            }
+
+            if (netFees > 0 && billNumber === '') {
+                alert('Bill number is required when net fees is provided');
+                return false;
+            }
+
+            return true;
+        }
+
+        function setDefaultJoinDate() {
+            const dateOfJoinInput = document.getElementById('date_of_join');
+            if (dateOfJoinInput && !dateOfJoinInput.value) {
+                const today = new Date();
+                const formattedDate = today.toISOString().split('T')[0];
+                dateOfJoinInput.value = formattedDate;
+            }
+        }
+    </script>
+</body>
+</html>

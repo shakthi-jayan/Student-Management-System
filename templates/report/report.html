@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Fee Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
+    <h1 class="text-3xl font-bold text-gray-800 my-4">Monthly Fee Report</h1>
+    <div class="bg-white p-6 shadow-md rounded-lg w-full max-w-3xl">
+        <canvas id="feeChart" class="w-full h-64"></canvas>
+    </div>
+
+    <script>
+        // Data passed from Flask
+        const months = {{ months|tojson }};
+        const fees = {{ fees|tojson }};
+
+        // Render the chart
+        const ctx = document.getElementById('feeChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar', // Choose 'bar', 'line', etc.
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Total Fees Collected',
+                    data: fees,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

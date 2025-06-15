@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - {{ db|title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>
+        /* Light mode styles (default) */
+        .light body {
+            background-color: #F3F4F6;
+            color: #111827;
+        }
+        .light .bg-gray-100 {
+            background-color: #F3F4F6;
+        }
+        .light .bg-white {
+            background-color: #FFFFFF;
+        }
+        .light .text-gray-900 {
+            color: #111827;
+        }
+        .light .text-gray-800 {
+            color: #1F2937;
+        }
+        .light .text-gray-600 {
+            color: #6B7280;
+        }
+        .light .border-gray-200 {
+            border-color: #D1D5DB;
+        }
+        .light .bg-gray-50 {
+            background-color: #F9FAFB;
+        }
+        .light .progress-bar {
+            background-color: #E5E7EB;
+        }
+        .light .table-header {
+            background-color: #F3F4F6;
+        }
+        .light .table-row {
+            background-color: #FFFFFF;
+        }
+        .light .table-row:hover {
+            background-color: #F9FAFB;
+        }
+        .light .nav-container {
+            background-color: #F3F4F6;
+            color: #111827;
+        }
+        .light .nav-link {
+            color: #4B5563;
+        }
+        .light .nav-link:hover {
+            background-color: #DBEAFE;
+            color: #1E40AF;
+        }
+        .light .nav-link button {
+            color: #4B5563;
+        }
+        .light .nav-link:hover button {
+            color: #1E40AF;
+        }
+        .light .text-gray-400 {
+            color: #6B7280;
+        }
+        .light .border-gray-600 {
+            border-color: #D1D5DB;
+        }
+        .light .group-hover\:border-indigo-500 {
+            border-color: #6366F1;
+        }
+
+        /* Dark mode styles */
+        .dark body {
+            background-color: #1E293B;
+            color: #E5E7EB;
+        }
+        .dark .bg-gray-100 {
+            background-color: #1E293B;
+        }
+        .dark .bg-white {
+            background-color: #2D3748;
+        }
+        .dark .text-gray-900 {
+            color: #E5E7EB;
+        }
+        .dark .text-gray-800 {
+            color: #D1D5DB;
+        }
+        .dark .text-gray-600 {
+            color: #9CA3AF;
+        }
+        .dark .border-gray-200 {
+            border-color: #374151;
+        }
+        .dark .bg-gray-50 {
+            background-color: #1F2937;
+        }
+        .dark .progress-bar {
+            background-color: #374151;
+        }
+        .dark .table-header {
+            background-color: #374151;
+        }
+        .dark .table-row {
+            background-color: #1F2937;
+        }
+        .dark .table-row:hover {
+            background-color: #374151;
+        }
+        .dark .nav-container {
+            background-color: #111827;
+            color: #D1D5DB;
+        }
+        .dark .nav-link {
+            color: #D1D5DB;
+        }
+        .dark .nav-link:hover {
+            background-color: #4338CA;
+            color: #FFFFFF;
+        }
+        .dark .nav-link button {
+            color: #D1D5DB;
+        }
+        .dark .nav-link:hover button {
+            color: #FFFFFF;
+        }
+        .dark .text-gray-400 {
+            color: #9CA3AF;
+        }
+        .dark .border-gray-600 {
+            border-color: #4B5563;
+        }
+        .dark .group-hover\:border-indigo-500 {
+            border-color: #6366F1;
+        }
+
+        /* Common styles */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .progress-bar {
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            transition: width 0.5s ease-in-out;
+        }
+        .course-card {
+            transition: all 0.3s ease;
+        }
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .glow-card {
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
+        }
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        main {
+            margin-left: 16rem;
+            width: calc(100% - 16rem);
+            padding-top: 0.5rem;
+        }
+        @media (max-width: 768px) {
+            main {
+                margin-left: 0;
+                width: 100%;
+                padding-top: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans light">
+    <div class="flex min-h-screen">
+        <!-- Sidebar (Navigation Bar) -->
+        <aside class="w-64 fixed h-screen bg-gray-900 text-white">
+            <nav class="nav-container w-64 fixed inset-y-0 left-0 flex flex-col h-screen shadow-lg">
+                <!-- Logo Section -->
+                <div class="flex flex-col items-center mb-6 mt-6">
+                    <a href="{{ url_for('logo_upload', db=db) }}" class="group">
+                        <img src="{% if logo_path %}{{ url_for('static', filename=logo_path) }}{% else %} {{ url_for('static', filename='default_logo.png') }}{% endif %}" alt="Logo" class="w-32 h-auto border-2 border-gray-600 group-hover:border-indigo-500 transition duration-200">
+                    </a>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="flex flex-col space-y-2 flex-grow px-4">
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.25 2.25L15 6" />
+                        </svg>
+                        <a href="{{ url_for('user_dashboard', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Application Dashboard</a>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                        </svg>
+                        <a href="{{ url_for('information_dashboard', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Information Dashboard</a>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 .75h.008v.008H18v-.008zm-12 0h.008v.008H6v-.008z" />
+                        </svg>
+                        <a href="{{ url_for('fees', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Student Fees</a>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.503 3.503 12 4.125 12h2.25c.621 0 1.125.503 1.125 1.125v6.75C7.5 20.497 6.997 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.497 3 21 3.503 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                        </svg>
+                        <a href="{{ url_for('analytics_dashboard', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Analytics Dashboard</a>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <a href="{{ url_for('account', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Account</a>
+                    </div>
+
+                    <!-- Dark/Light Mode Toggle -->
+                    <div class="flex items-center space-x-3">
+                        <svg id="darkIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                        </svg>
+                        <svg id="lightIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400 hidden">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                        </svg>
+                        <button id="themeToggle" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200 flex-grow">
+                            <span id="themeText">Toggle Theme</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center space-x-3 mt-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                        </svg>
+                        <a href="{{ url_for('logout') }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Logout</a>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-x-auto bg-gray-100">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b border-gray-200">
+                <div class="px-6 py-2">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-800">Analytics Dashboard</h1>
+                            <p class="text-gray-600">{{ date_range_display }}</p>
+                        </div>
+                        <!-- Period Selection and Custom Date Range -->
+                        <div class="flex items-center space-x-4">
+                            <!-- Period Selection -->
+                            <form method="GET" class="flex items-center space-x-2">
+                                <select name="period" onchange="this.form.submit()" class="bg-white text-gray-800 px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="week" {% if period == 'week' %}selected{% endif %}>This Week</option>
+                                    <option value="month" {% if period == 'month' %}selected{% endif %}>This Month</option>
+                                    <option value="year" {% if period == 'year' %}selected{% endif %}>This Year</option>
+                                    <option value="joined" {% if period == 'joined' %}selected{% endif %}>Joined</option>
+                                    <option value="not_joined" {% if period == 'not_joined' %}selected{% endif %}>Not Joined</option>
+                                </select>
+                                <input type="hidden" name="db" value="{{ db }}">
+                            </form>
+
+                            <!-- Custom Date Range -->
+                            <form method="GET" id="dateRangeForm" class="flex items-center space-x-2">
+                                <input type="hidden" name="db" value="{{ db }}">
+                                <input type="date" name="start_date" value="{{ start_date }}" class="bg-white text-gray-800 px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <span class="text-gray-600">to</span>
+                                <input type="date" name="end_date" value="{{ end_date }}" class="bg-white text-gray-800 px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-md text-white">Apply</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="px-6 pt-2 pb-6">
+                <!-- Key Metrics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Total Students Card -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg glow-card border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-800 mb-2">Total Students</h2>
+                                <p class="text-3xl font-bold text-indigo-600">{{ total_students }}</p>
+                            </div>
+                            <div class="bg-indigo-100 p-3 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                <span>Active Learners</span>
+                                <span>{{ active_learners }} ({{ (active_learners/total_students*100 if total_students > 0 else 0)|round(1) }}%)</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-green-500" style="width: {{ (active_learners/total_students*100 if total_students > 0 else 0)|round(1) }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Courses Card -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg glow-card border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-800 mb-2">Total Courses</h2>
+                                <p class="text-3xl font-bold text-indigo-600">{{ total_courses }}</p>
+                            </div>
+                            <div class="bg-indigo-100 p-3 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="text-sm text-gray-600">Top Course: {{ max_student_course }}</div>
+                            <div class="text-sm text-gray-600">{{ max_student_count }} students</div>
+                        </div>
+                    </div>
+
+                    <!-- Total Revenue Card -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg glow-card border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-800 mb-2">Total Revenue</h2>
+                                <p class="text-3xl font-bold text-indigo-600">₹{{ total_revenue|floatformat }}</p>
+                            </div>
+                            <div class="bg-indigo-100 p-3 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                <span>Collected</span>
+                                <span>₹{{ collected_revenue|floatformat }} ({{ (collected_revenue/total_revenue*100 if total_revenue > 0 else 0)|round(1) }}%)</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill bg-green-500" style="width: {{ (collected_revenue/total_revenue*100 if total_revenue > 0 else 0)|round(1) }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Course Card -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg glow-card border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-semibold text-gray-800 mb-2">Top Course</h2>
+                                <p class="text-2xl font-bold text-indigo-600">{{ max_fee_course }}</p>
+                            </div>
+                            <div class="bg-indigo-100 p-3 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="text-sm text-gray-600">Revenue: ₹{{ max_fee_amount|floatformat }}</div>
+                            <div class="text-sm text-gray-600">{{ (max_fee_amount/total_revenue*100 if total_revenue > 0 else 0)|round(1) }}% of total</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Not Joined Students Section -->
+                <!-- Not Joined Students Section -->
+{% if period == 'not_joined' and not_joined_students %}
+<div class="bg-white p-6 rounded-lg shadow-lg mb-8 border border-gray-200">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Not Joined Students</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="table-header">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course Interested</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile Number 1</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile Number 2</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Since</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for student in not_joined_students %}
+                <tr class="table-row">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{ student.name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{ student.course_interested }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                        {% if student.mobile_number1 and student.mobile_number1|length == 10 and student.mobile_number1|is_digit %}
+                            <a href="tel:{{ student.mobile_number1 }}" class="text-indigo-600 hover:underline">{{ student.mobile_number1 }}</a>
+                        {% else %}
+                            {{ student.mobile_number1|default('N/A') }}
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                        {% if student.mobile_number2 and student.mobile_number2|length == 10 and student.mobile_number2|is_digit %}
+                            <a href="tel:{{ student.mobile_number2 }}" class="text-indigo-600 hover:underline">{{ student.mobile_number2 }}</a>
+                        {% else %}
+                            {{ student.mobile_number2|default('N/A') }}
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                        <span class="px-2 py-1 rounded-full text-xs 
+                            {% if student.status == 'Pending' %}bg-yellow-100 text-yellow-800
+                            {% elif student.status == 'Contacted' %}bg-blue-100 text-blue-800
+                            {% elif student.status == 'Not Interested' %}bg-red-100 text-red-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ student.status|default('Pending') }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                        {% if student.created_at %}
+                            {{ (today - student.created_at.date()).days }} days
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                        <form action="{{ url_for('join_student', db=db, student_id=student.id) }}" method="POST">
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md text-sm">Join</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+                <!-- Revenue Summary -->
+                <div class="bg-white p-6 rounded-lg shadow-lg mb-8 border border-gray-200">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Revenue Summary</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <p class="text-gray-600">Total Revenue</p>
+                            <p class="text-2xl font-bold text-indigo-600">₹{{ total_revenue|floatformat }}</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <p class="text-gray-600">Collected Revenue</p>
+                            <p class="text-2xl font-bold text-green-600">₹{{ collected_revenue|floatformat }}</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <p class="text-gray-600">Pending Payments</p>
+                            <p class="text-2xl font-bold text-orange-600">₹{{ pending_payments|floatformat }}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="chart-container">
+                            <canvas id="revenuePieChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="revenueTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Course Performance -->
+                <div class="bg-white p-6 rounded-lg shadow-lg mb-8 border border-gray-200">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Course Performance</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="chart-container">
+                            <canvas id="courseEnrollmentChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="courseRevenueChart"></canvas>
+                        </div>
+                    </div>
+
+                    {% if course_performance %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="table-header">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Fees</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Fees</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% of Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                {% for data in course_performance %}
+                                <tr class="table-row">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">{{ data.course }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{ data.total_students }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">₹{{ data.total_fees|floatformat }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">₹{{ (data.total_fees/data.total_students if data.total_students > 0 else 0)|floatformat }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                        <div class="flex items-center">
+                                            <span class="mr-2">{{ (data.total_fees/total_revenue*100 if total_revenue > 0 else 0)|round(1) }}%</span>
+                                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                                <div class="bg-indigo-600 h-2.5 rounded-full" style="width: {{ (data.total_fees/total_revenue*100 if total_revenue > 0 else 0)|round(1) }}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-gray-600 text-center py-8">No course performance data available for the selected period.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Enrollment Trends -->
+                <div class="bg-white p-6 rounded-lg shadow-lg mb-8 border border-gray-200">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Enrollment Trends</h2>
+                    <div class="mb-4">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <p class="text-sm text-gray-600">Total Enrollments</p>
+                                <p class="text-xl font-bold text-indigo-600">{{ total_students }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <p class="text-sm text-gray-600">Fully Paid</p>
+                                <p class="text-xl font-bold text-green-600">{{ fully_paid_count }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <p class="text-sm text-gray-600">Pending Payments</p>
+                                <p class="text-xl font-bold text-orange-600">{{ pending_count }}</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <p class="text-sm text-gray-600">Conversion Rate</p>
+                                <p class="text-xl font-bold text-purple-600">{{ (fully_paid_count/total_students*100 if total_students > 0 else 0)|round(1) }}%</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="enrollmentTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Course Overview Cards -->
+                <div class="bg-white p-6 rounded-lg shadow-lg mb-8 border border-gray-200">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-6">Course Overview</h2>
+                    {% if course_enrollment %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {% for course, count in course_enrollment.items() %}
+                        <div class="course-card bg-white rounded-lg p-4 shadow-md hover:shadow-lg border border-gray-200">
+                            <div class="flex justify-between items-start mb-3">
+                                <h3 class="text-lg font-semibold text-gray-800 truncate">{{ course }}</h3>
+                                <span class="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">{{ count }} students</span>
+                            </div>
+                            <div class="mb-2">
+                                <div class="flex justify-between text-xs text-gray-600 mb-1">
+                                    <span>Revenue</span>
+                                    <span>
+                                        {% set course_rev = 0 %}
+                                        {% for perf in course_performance %}
+                                            {% if perf.course == course %}
+                                                {% set course_rev = perf.total_fees %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        ₹{{ course_rev|floatformat }}
+                                    </span>
+                                </div>
+                                <div class="progress-bar">
+                                <!-- stylelint-disable-next-line css-semicolonexpected -->
+<div class="progress-fill bg-indigo-500" 
+     style="--progress: {{ (course_rev/total_revenue*100 if total_revenue > 0 else 0)|round(1) }}; width: var(--progress)%;">
+</div>
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-600 mt-2">
+                                <span>{{ (count/total_students*100 if total_students > 0 else 0)|round(1) }}% of total</span>
+                                <span>Avg: ₹{{ (course_rev/count if count > 0 else 0)|floatformat }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-600 text-center py-8">No course data available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Theme toggle functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggle = document.getElementById('themeToggle');
+            const darkIcon = document.getElementById('darkIcon');
+            const lightIcon = document.getElementById('lightIcon');
+            const themeText = document.getElementById('themeText');
+            const html = document.documentElement;
+
+            // Check for saved theme preference or use system preference
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+            // Apply initial theme
+            html.classList.remove('light', 'dark');
+            html.classList.add(initialTheme);
+            updateThemeUI(initialTheme);
+
+            // Toggle theme on button click
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    const currentTheme = html.classList.contains('dark') ? 'dark' : 'light';
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+                    html.classList.remove('light', 'dark');
+                    html.classList.add(newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeUI(newTheme);
+                    updateChartColors();
+                });
+            }
+
+            // Update UI elements based on theme
+            function updateThemeUI(theme) {
+                if (theme === 'dark') {
+                    darkIcon.classList.add('hidden');
+                    lightIcon.classList.remove('hidden');
+                    themeText.textContent = 'Light Mode';
+                } else {
+                    darkIcon.classList.remove('hidden');
+                    lightIcon.classList.add('hidden');
+                    themeText.textContent = 'Dark Mode';
+                }
+            }
+
+            // Listen for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                if (!localStorage.getItem('theme')) {
+                    const newTheme = e.matches ? 'dark' : 'light';
+                    html.classList.remove('light', 'dark');
+                    html.classList.add(newTheme);
+                    updateThemeUI(newTheme);
+                    updateChartColors();
+                }
+            });
+
+            // Update charts when period or dates change
+            function updateCharts(event) {
+                event.preventDefault(); // Prevent default form submission
+                const period = document.querySelector('select[name="period"]').value;
+                let url = `{{ url_for('analytics_dashboard', db=db) }}?period=${period}`;
+                
+                const startDate = document.querySelector('input[name="start_date"]').value;
+                const endDate = document.querySelector('input[name="end_date"]').value;
+                
+                if (startDate && endDate) {
+                    if (new Date(startDate) > new Date(endDate)) {
+                        alert('Start date cannot be after end date');
+                        return;
+                    }
+                    url += `&start_date=${startDate}&end_date=${endDate}`;
+                }
+                
+                window.location.href = url;
+            }
+
+            // Attach updateCharts to date range form submission
+            const dateRangeForm = document.getElementById('dateRangeForm');
+            if (dateRangeForm) {
+                dateRangeForm.addEventListener('submit', updateCharts);
+            }
+
+            // Initialize charts with proper data
+            try {
+                // Register chartjs-plugin-datalabels
+                if (typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined') {
+                    Chart.register(ChartDataLabels);
+                } else {
+                    console.error('Chart.js or ChartDataLabels plugin not loaded.');
+                    return;
+                }
+
+                // Parse data from template variables with validation
+                let coursePerformance = [];
+                try {
+                    const rawCoursePerformance = '{{ course_performance|tojson|safe }}';
+                    if (rawCoursePerformance && rawCoursePerformance !== 'null') {
+                        coursePerformance = JSON.parse(rawCoursePerformance);
+                    }
+                } catch (e) {
+                    console.warn('Failed to parse course_performance:', e.message);
+                }
+
+                let courseEnrollment = {};
+                try {
+                    const rawCourseEnrollment = '{{ course_enrollment|tojson|safe }}';
+                    if (rawCourseEnrollment && rawCourseEnrollment !== 'null') {
+                        courseEnrollment = JSON.parse(rawCourseEnrollment);
+                    }
+                } catch (e) {
+                    console.warn('Failed to parse course_enrollment:', e.message);
+                }
+
+                let enrollmentTrends = [];
+                try {
+                    const rawEnrollmentTrends = '{{ enrollment_trends|tojson|safe }}';
+                    if (rawEnrollmentTrends && rawEnrollmentTrends !== 'null') {
+                        enrollmentTrends = JSON.parse(rawEnrollmentTrends);
+                    }
+                } catch (e) {
+                    console.warn('Failed to parse enrollment_trends:', e.message);
+                }
+
+                // Parse numeric values with fallback
+                const collectedRevenue = parseFloat('{{ collected_revenue|default(0) }}') || 0;
+                const pendingPayments = parseFloat('{{ pending_payments|default(0) }}') || 0;
+                const totalRevenue = parseFloat('{{ total_revenue|default(0) }}') || 0;
+
+                // Chart color configuration
+                const getThemeColors = () => {
+                    return html.classList.contains('dark') ? {
+                        text: '#E5E7EB',
+                        grid: '#4B5563',
+                        revenueCollected: '#34D399',
+                        revenuePending: '#FB923C',
+                        enrollment: '#6366F1',
+                        revenue: '#34D399',
+                        cumulative: '#FB923C'
+                    } : {
+                        text: '#6B7280',
+                        grid: '#E5E7EB',
+                        revenueCollected: '#10B981',
+                        revenuePending: '#F97316',
+                        enrollment: '#4F46E5',
+                        revenue: '#10B981',
+                        cumulative: '#F97316'
+                    };
+                };
+
+                // Initialize all charts with proper data
+                function initializeCharts() {
+                    let colors = getThemeColors();
+                    let revenuePieChart, courseEnrollmentChart, courseRevenueChart, revenueTrendChart, enrollmentTrendChart;
+
+                    // Revenue Pie Chart
+                    const revenuePieCanvas = document.getElementById('revenuePieChart');
+                    if (revenuePieCanvas) {
+                        revenuePieChart = new Chart(revenuePieCanvas, {
+                            type: 'pie',
+                            data: {
+                                labels: ['Collected', 'Pending'],
+                                datasets: [{
+                                    data: [collectedRevenue, pendingPayments],
+                                    backgroundColor: [colors.revenueCollected, colors.revenuePending],
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            color: colors.text,
+                                            padding: 20,
+                                            font: { size: 12 }
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Revenue Distribution',
+                                        color: colors.text,
+                                        font: { size: 16 }
+                                    },
+                                    datalabels: {
+                                        formatter: (value) => {
+                                            return '₹' + value.toLocaleString() + '\n(' + 
+                                                (totalRevenue > 0 ? (value / totalRevenue * 100).toFixed(1) : 0) + '%)';
+                                        },
+                                        color: '#fff',
+                                        font: { weight: 600 }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        console.warn('Revenue Pie Chart canvas not found.');
+                    }
+
+                    // Course Enrollment Chart
+                    const courseEnrollmentCanvas = document.getElementById('courseEnrollmentChart');
+                    if (courseEnrollmentCanvas && Object.keys(courseEnrollment).length > 0) {
+                        const courseLabels = Object.keys(courseEnrollment);
+                        const enrollmentData = Object.values(courseEnrollment);
+
+                        courseEnrollmentChart = new Chart(courseEnrollmentCanvas, {
+                            type: 'bar',
+                            data: {
+                                labels: courseLabels,
+                                datasets: [{
+                                    label: 'Students',
+                                    data: enrollmentData,
+                                    backgroundColor: colors.enrollment,
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    title: {
+                                        display: true,
+                                        text: 'Course Enrollments',
+                                        color: colors.text,
+                                        font: { size: 16 }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        ticks: {
+                                            color: colors.text,
+                                            maxRotation: 45,
+                                            minRotation: 45
+                                        },
+                                        grid: { display: false }
+                                    },
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: { color: colors.text },
+                                        grid: { color: colors.grid }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        console.warn('Course Enrollment Chart: Canvas not found or no enrollment data.');
+                    }
+
+                    // Course Revenue Chart
+                    const courseRevenueCanvas = document.getElementById('courseRevenueChart');
+                    if (courseRevenueCanvas && coursePerformance.length > 0) {
+                        const courseLabels = coursePerformance.map(item => item.course || 'Unknown');
+                        const revenueData = coursePerformance.map(item => item.total_fees || 0);
+
+                        courseRevenueChart = new Chart(courseRevenueCanvas, {
+                            type: 'bar',
+                            data: {
+                                labels: courseLabels,
+                                datasets: [{
+                                    label: 'Revenue',
+                                    data: revenueData,
+                                    backgroundColor: colors.revenue,
+                                    borderWidth: 0
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    title: {
+                                        display: true,
+                                        text: 'Course Revenue',
+                                        color: colors.text,
+                                        font: { size: 16 }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        ticks: {
+                                            color: colors.text,
+                                            maxRotation: 45,
+                                            minRotation: 45
+                                        },
+                                        grid: { display: false }
+                                    },
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            color: colors.text,
+                                            callback: function(value) { return '₹' + value; }
+                                        },
+                                        grid: { color: colors.grid }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        console.warn('Course Revenue Chart: Canvas not found or no performance data.');
+                    }
+
+                    // Revenue Trend Chart
+                    const revenueTrendCanvas = document.getElementById('revenueTrendChart');
+                    if (revenueTrendCanvas && enrollmentTrends.length > 0) {
+                        const revenueDates = enrollmentTrends.map(item => item.date || '');
+                        const revenueData = enrollmentTrends.map(item => item.revenue || 0);
+
+                        revenueTrendChart = new Chart(revenueTrendCanvas, {
+                            type: 'line',
+                            data: {
+                                labels: revenueDates,
+                                datasets: [{
+                                    label: 'Revenue',
+                                    data: revenueData,
+                                    borderColor: colors.enrollment,
+                                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                                    borderWidth: 2,
+                                    fill: true,
+                                    tension: 0.2
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    title: {
+                                        display: true,
+                                        text: 'Revenue Trend',
+                                        color: colors.text,
+                                        font: { size: 16 }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        ticks: { color: colors.text },
+                                        grid: { display: false }
+                                    },
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            color: colors.text,
+                                            callback: function(value) { return '₹' + value; }
+                                        },
+                                        grid: { color: colors.grid }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        console.warn('Revenue Trend Chart: Canvas not found or no trend data.');
+                    }
+
+                    // Enrollment Trend Chart
+                    const enrollmentTrendCanvas = document.getElementById('enrollmentTrendChart');
+                    if (enrollmentTrendCanvas && enrollmentTrends.length > 0) {
+                        const enrollmentDates = enrollmentTrends.map(item => item.date || '');
+                        const enrollmentData = enrollmentTrends.map(item => item.enrollments || 0);
+
+                        // Calculate cumulative enrollments
+                        let cumulativeData = [];
+                        let cumulative = 0;
+                        for (let enrollment of enrollmentData) {
+                            cumulative += enrollment;
+                            cumulativeData.push(cumulative);
+                        }
+
+                        enrollmentTrendChart = new Chart(enrollmentTrendCanvas, {
+                            type: 'line',
+                            data: {
+                                labels: enrollmentDates,
+                                datasets: [
+                                    {
+                                        label: 'New Enrollments',
+                                        data: enrollmentData,
+                                        borderColor: colors.enrollment,
+                                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                                        borderWidth: 2,
+                                        fill: true,
+                                        tension: 0.2
+                                    },
+                                    {
+                                        label: 'Cumulative',
+                                        data: cumulativeData,
+                                        borderColor: colors.cumulative,
+                                        borderWidth: 2,
+                                        fill: false,
+                                        tension: 0.2,
+                                        yAxisID: 'cumulative'
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            color: colors.text,
+                                            padding: 20,
+                                            font: { size: 12 }
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Enrollment Trend',
+                                        color: colors.text,
+                                        font: { size: 16 }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        ticks: { color: colors.text },
+                                        grid: { display: false }
+                                    },
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: { color: colors.text },
+                                        grid: { color: colors.grid }
+                                    },
+                                    cumulative: {
+                                        position: 'right',
+                                        beginAtZero: true,
+                                        ticks: { color: colors.text },
+                                        grid: { display: false }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        console.warn('Enrollment Trend Chart: Canvas not found or no trend data.');
+                    }
+
+                    // Update chart colors when theme changes
+                    function updateChartColors() {
+                        const colors = getThemeColors();
+                        
+                        if (revenuePieChart) {
+                            revenuePieChart.data.datasets[0].backgroundColor = [colors.revenueCollected, colors.revenuePending];
+                            revenuePieChart.options.plugins.legend.labels.color = colors.text;
+                            revenuePieChart.options.plugins.title.color = colors.text;
+                            revenuePieChart.update();
+                        }
+                        
+                        if (courseEnrollmentChart) {
+                            courseEnrollmentChart.data.datasets[0].backgroundColor = colors.enrollment;
+                            courseEnrollmentChart.options.scales.x.ticks.color = colors.text;
+                            courseEnrollmentChart.options.scales.x.grid.color = colors.grid;
+                            courseEnrollmentChart.options.scales.y.ticks.color = colors.text;
+                            courseEnrollmentChart.options.scales.y.grid.color = colors.grid;
+                            courseEnrollmentChart.options.plugins.title.color = colors.text;
+                            courseEnrollmentChart.update();
+                        }
+                        
+                        if (courseRevenueChart) {
+                            courseRevenueChart.data.datasets[0].backgroundColor = colors.revenue;
+                            courseRevenueChart.options.scales.x.ticks.color = colors.text;
+                            courseRevenueChart.options.scales.x.grid.color = colors.grid;
+                            courseRevenueChart.options.scales.y.ticks.color = colors.text;
+                            courseRevenueChart.options.scales.y.grid.color = colors.grid;
+                            courseRevenueChart.options.plugins.title.color = colors.text;
+                            courseRevenueChart.update();
+                        }
+                        
+                        if (revenueTrendChart) {
+                            revenueTrendChart.data.datasets[0].datasets.borderColor = colors.enrollment;
+                            revenueTrendChart.data.datasets[0].backgroundColor = 'rgba(79, 70, 229, 0.1)';
+                            revenueTrendChart.options.scales.x.ticks.color = colors.text;
+                            revenueTrendChart.options.scales.x.grid.color = colors.grid;
+                            revenueTrendChart.options.scales.y.ticks.color = colors.text;
+                            revenueTrendChart.options.scales.y.grid.color = colors.grid;
+                            revenueTrendChart.options.plugins.title.color = colors.text;
+                            revenueTrendChart.update();
+                        }
+                        
+                        if (enrollmentTrendChart) {
+                            enrollmentTrendChart.data.datasets[0].borderColor = colors.enrollment;
+                            enrollmentTrendChart.data.datasets[0].backgroundColor = 'rgba(79, 70, 229, 0.1)';
+                            enrollmentTrendChart.data.datasets[1].borderColor = colors.cumulative;
+                            enrollmentTrendChart.options.scales.x.ticks.color = colors.text;
+                            enrollmentTrendChart.options.scales.x.grid.color = colors.grid;
+                            enrollmentTrendChart.options.scales.y.ticks.color = colors.text;
+                            enrollmentTrendChart.options.scales.y.grid.color = colors.grid;
+                            enrollmentTrendChart.options.scales.cumulative.ticks.color = colors.text;
+                            enrollmentTrendChart.options.plugins.title.color = colors.text;
+                            enrollmentTrendChart.options.plugins.legend.labels.color = colors.text;
+                            enrollmentTrendChart.update();
+                        }
+                    }
+
+                    // Expose updateChartColors to global scope
+                    window.updateChartColors = updateChartColors;
+                }
+
+                // Call initializeCharts when page loads
+                initializeCharts();
+            } catch (error) {
+                console.error('Error initializing charts:', error.message, error.stack);
+            }
+        });
+    </script>
+</body>
+</html>

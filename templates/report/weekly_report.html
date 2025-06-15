@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Report - {{ db|title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="font-sans light">
+    <div class="flex min-h-screen">
+        <!-- Sidebar (Navigation Bar) -->
+        <aside class="w-64 p-4 flex-shrink-0 min-h-screen">
+            <nav class="nav-container w-64 fixed inset-y-0 left-0 flex flex-col h-screen shadow-lg">
+                <!-- Logo Section -->
+                <div class="flex flex-col items-center mb-6 mt-6">
+                    <a href="{{ url_for('logo_upload', db=db) }}" class="group">
+                        <img src="{% if logo_path %}{{ url_for('static', filename=logo_path) }}{% else %}{{ url_for('static', filename='default_logo.png') }}{% endif %}" alt="Logo" class="w-32 h-auto border-2 border-gray-600 group-hover:border-indigo-500 transition duration-200">
+                    </a>
+                </div>
+                
+                <!-- Navigation Links -->
+                <div class="flex flex-col space-y-2 flex-grow px-4">
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5m.75-9l3-3 2.25 2.25L15 6" />
+                        </svg>
+                        <a href="{{ url_for('user_dashboard', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Application Dashboard</a>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                        </svg>
+                        <a href="{{ url_for('information_dashboard', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Information Dashboard</a>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 .75h.008v.008H18v-.008zm-12 0h.008v.008H6v-.008z" />
+                        </svg>
+                        <a href="{{ url_for('fees', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Student Fees</a>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.503 3.503 12 4.125 12h2.25c.621 0 1.125.503 1.125 1.125v6.75C7.5 20.497 6.997 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.497 3 21 3.503 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                        </svg>
+                        <a href="{{ url_for('analytics_dashboard', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Analytics Dashboard</a>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <a href="{{ url_for('account', db=db) }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Account</a>
+                    </div>
+
+                    <!-- Dark/Light Mode Toggle -->
+                    <div class="flex items-center space-x-3">
+                        <svg id="darkIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                        </svg>
+                        <svg id="lightIcon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400 hidden">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                        </svg>
+                        <button id="themeToggle" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200 flex-grow">
+                            <span id="themeText">Toggle Theme</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center space-x-3 mt-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                        </svg>
+                        <a href="{{ url_for('logout') }}" class="nav-link px-3 py-2 rounded-lg text-sm font-medium transition duration-200">Logout</a>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-8 bg-gray-100">
+            <!-- Header -->
+            <header class="mb-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800">Weekly Report</h1>
+                        <p class="text-gray-600">{{ date_range_display|default('N/A') }}</p>
+                    </div>
+                    <a href="{{ url_for('analytics_dashboard', db=db) }}" class="back-link text-indigo-600 hover:underline flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Back to Dashboard
+                    </a>
+                </div>
+            </header>
+
+            <!-- Not Joined Students Section -->
+            {% if not_joined_students %}
+            <div class="bg-white p-6 rounded-lg shadow-lg mb-8 border border-gray-200">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Not Joined Students</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="table-header">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course Interested</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Since</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for student in not_joined_students %}
+                            <tr class="table-row">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{ student.name|default('N/A') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{{ student.course_interested|default('N/A') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                    {% if student.mobile_number and student.mobile_number|length == 10 and student.mobile_number|is_digit %}
+                                        <a href="tel:{{ student.mobile_number }}" class="text-indigo-600 hover:underline">{{ student.mobile_number }}</a>
+                                    {% else %}
+                                        {{ student.mobile_number|default('N/A') }}
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                    <span class="px-2 py-1 rounded-full text-xs 
+                                        {% if student.status == 'Pending' %}bg-yellow-100 text-yellow-800
+                                        {% elif student.status == 'Contacted' %}bg-blue-100 text-blue-800
+                                        {% elif student.status == 'Not Interested' %}bg-red-100 text-red-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ student.status|default('Pending') }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                    {% if student.created_at %}
+                                        {{ (today - student.created_at.date()).days }} days
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
+                                    <form action="{{ url_for('join_student', db=db, student_id=student.id|default('')) }}" method="POST">
+                                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md text-sm">Join</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% else %}
+            <p class="text-gray-500 text-center py-8">No not joined students data available for this period.</p>
+            {% endif %}
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,276 @@
+.light body {
+    background-color: #F3F4F6;
+    color: #111827;
+}
+.light .bg-gray-100 {
+    background-color: #F3F4F6;
+}
+.light .bg-white {
+    background-color: #FFFFFF;
+}
+.light .text-gray-900 {
+    color: #111827;
+}
+.light .text-gray-800 {
+    color: #1F2937;
+}
+.light .text-gray-600 {
+    color: #6B7280;
+}
+.light .text-gray-500 {
+    color: #6B7280;
+}
+.light .text-gray-400 {
+    color: #9CA3AF;
+}
+.light .text-gray-300 {
+    color: #D1D5DB;
+}
+.light .text-gray-100 {
+    color: #F3F4F6;
+}
+.light .border-gray-200 {
+    border-color: #D1D5DB;
+}
+.light .border-gray-600 {
+    border-color: #D1D5DB;
+}
+.light .border-gray-700 {
+    border-color: #D1D5DB;
+}
+.light .bg-gray-50 {
+    background-color: #F9FAFB;
+}
+.light .bg-gray-700 {
+    background-color: #D1D5DB;
+}
+.light .bg-gray-800 {
+    background-color: #FFFFFF;
+}
+.light .progress-bar {
+    background-color: #E5E7EB;
+}
+.light .table-header {
+    background-color: #F3F4F6;
+}
+.light .table-row {
+    background-color: #FFFFFF;
+}
+.light .table-row:nth-child(even) {
+    background-color: #F9FAFB;
+}
+.light .table-row:hover {
+    background-color: #F9FAFB;
+}
+.light .nav-container {
+    background-color: #F3F4F6;
+    color: #111827;
+}
+.light .nav-link {
+    color: #4B5563;
+}
+.light .nav-link:hover {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+}
+.light .nav-link button {
+    color: #4B5563;
+}
+.light .nav-link:hover button {
+    color: #1E40AF;
+}
+.light .group-hover\:border-indigo-500 {
+    border-color: #6366F1;
+}
+.light .bg-indigo-600 {
+    background-color: #4F46E5;
+}
+.light .hover\:bg-indigo-700:hover {
+    background-color: #4338CA;
+}
+.light .bg-green-600 {
+    background-color: #10B981;
+}
+.light .hover\:bg-green-700:hover {
+    background-color: #059669;
+}
+.light .bg-yellow-600 {
+    background-color: #F59E0B;
+}
+.light .hover\:bg-yellow-700:hover {
+    background-color: #D97706;
+}
+.light .text-indigo-400 {
+    color: #4F46E5;
+}
+
+/* Dark mode styles */
+.dark body {
+    background-color: #1E293B;
+    color: #E5E7EB;
+}
+.dark .bg-gray-100 {
+    background-color: #1E293B;
+}
+.dark .bg-white {
+    background-color: #2D3748;
+}
+.dark .text-gray-900 {
+    color: #E5E7EB;
+}
+.dark .text-gray-800 {
+    color: #D1D5DB;
+}
+.dark .text-gray-600 {
+    color: #9CA3AF;
+}
+.dark .text-gray-500 {
+    color: #9CA3AF;
+}
+.dark .text-gray-400 {
+    color: #9CA3AF;
+}
+.dark .text-gray-300 {
+    color: #D1D5DB;
+}
+.dark .text-gray-100 {
+    color: #E5E7EB;
+}
+.dark .border-gray-200 {
+    border-color: #374151;
+}
+.dark .border-gray-600 {
+    border-color: #4B5563;
+}
+.dark .border-gray-700 {
+    border-color: #374151;
+}
+.dark .bg-gray-50 {
+    background-color: #1F2937;
+}
+.dark .bg-gray-700 {
+    background-color: #374151;
+}
+.dark .bg-gray-800 {
+    background-color: #2D3748;
+}
+.dark .progress-bar {
+    background-color: #374151;
+}
+.dark .table-header {
+    background-color: #374151;
+}
+.dark .table-row {
+    background-color: #1F2937;
+}
+.dark .table-row:nth-child(even) {
+    background-color: #374151;
+}
+.dark .table-row:hover {
+    background-color: #374151;
+}
+.dark .nav-container {
+    background-color: #111827;
+    color: #D1D5DB;
+}
+.dark .nav-link {
+    color: #D1D5DB;
+}
+.dark .nav-link:hover {
+    background-color: #4338CA;
+    color: #FFFFFF;
+}
+.dark .nav-link button {
+    color: #D1D5DB;
+}
+.dark .nav-link:hover button {
+    color: #FFFFFF;
+}
+.dark .group-hover\:border-indigo-500 {
+    border-color: #6366F1;
+}
+.dark .bg-indigo-600 {
+    background-color: #4F46E5;
+}
+.dark .hover\:bg-indigo-700:hover {
+    background-color: #4338CA;
+}
+.dark .bg-green-600 {
+    background-color: #059669;
+}
+.dark .hover\:bg-green-700:hover {
+    background-color: #047857;
+}
+.dark .bg-yellow-600 {
+    background-color: #D97706;
+}
+.dark .hover\:bg-yellow-700:hover {
+    background-color: #B45309;
+}
+.dark .text-indigo-400 {
+    color: #818CF8;
+}
+
+/* Common styles */
+.shadow-lg {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+.focus\:ring-indigo-300 {
+    --tw-ring-color: #6366F1;
+}
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+.progress-bar {
+    height: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    transition: width 0.5s ease-in-out;
+}
+.course-card {
+    transition: all 0.3s ease;
+}
+.course-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+.glow-card {
+    box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
+}
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+main {
+    margin-left: 16rem;
+    width: calc(100% - 16rem);
+    padding-top: 0.5rem;
+}
+@media (max-width: 768px) {
+    main {
+        margin-left: 0;
+        width: 100%;
+        padding-top: 0.5rem;
+    }
+}
+.back-link {
+    margin-top: 1rem;
+}
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1em;
+}

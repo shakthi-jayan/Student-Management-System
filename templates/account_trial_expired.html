@@ -1,0 +1,118 @@
+<!-- templates/account_trial_expired.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account - Trial Expired</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Trial Period Expired</h1>
+            <p class="text-gray-600 mt-2">Please upgrade to continue using the service</p>
+        </div>
+
+        <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 mb-2">Current Plan: {{ user_info.membership_plan }}</h2>
+            <p class="text-gray-600">Your 7-day free trial has ended. To continue using our service, please choose a subscription plan.</p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 mb-6">
+            <div class="border border-gray-300 rounded-lg p-4 hover:border-indigo-500 transition duration-200">
+                <h3 class="font-medium text-gray-900">Monthly Plan</h3>
+                <p class="text-gray-600">₹699 per month</p>
+                <button onclick="initiatePayment('monthly')" 
+                        class="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md">
+                    Subscribe Monthly
+                </button>
+            </div>
+            
+            <div class="border border-gray-300 rounded-lg p-4 hover:border-indigo-500 transition duration-200">
+                <h3 class="font-medium text-gray-900">Yearly Plan</h3>
+                <p class="text-gray-600">₹7,999 per year (Save ₹1,389)</p>
+                <button onclick="initiatePayment('yearly')" 
+                        class="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md">
+                    Subscribe Yearly
+                </button>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <a href="{{ url_for('logout') }}" class="text-indigo-600 hover:text-indigo-800">Logout</a>
+        </div>
+    </div>
+
+    <script>
+        function initiatePayment(plan) {
+            const amount = plan === 'monthly' ? 69900 : 799900; // in paise
+            const planName = plan === 'monthly' ? 'Monthly Plan' : 'Yearly Plan';
+            
+            const options = {
+                key: "{{ razorpay_key_id }}",
+                amount: amount,
+                currency: "INR",
+                name: "Student Management System",
+                description: planName,
+                image: "{{ url_for('static', filename='image/logo.png') }}",
+                handler: function(response) {
+                    // Submit payment verification to server
+                    verifyPayment(response, plan);
+                },
+                prefill: {
+                    name: "{{ user }}",
+                    email: "{{ user }}@example.com" // You might want to store email in user settings
+                },
+                theme: {
+                    color: "#4F46E5"
+                }
+            };
+            
+            const rzp = new Razorpay(options);
+            rzp.open();
+        }
+        
+        function verifyPayment(response, plan) {
+            const formData = new FormData();
+            formData.append('razorpay_payment_id', response.razorpay_payment_id);
+            formData.append('razorpay_order_id', response.razorpay_order_id);
+            formData.append('razorpay_signature', response.razorpay_signature);
+            formData.append('plan', plan);
+            
+            fetch("{{ url_for('payment_verify', db=db) }}", {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Payment Successful',
+                        text: 'Your subscription has been activated',
+                        icon: 'success'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Payment Failed',
+                        text: data.message || 'Please try again',
+                        icon: 'error'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'An error occurred during payment verification',
+                    icon: 'error'
+                });
+            });
+        }
+    </script>
+</body>
+</html>

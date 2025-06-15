@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #111827;
+            color: #f9fafb;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-trial {
+            background-color: #F59E0B;
+            color: #1F2937;
+        }
+        .badge-active {
+            background-color: #10B981;
+            color: white;
+        }
+        .badge-expired {
+            background-color: #EF4444;
+            color: white;
+        }
+        .badge-pending {
+            background-color: #3B82F6;
+            color: white;
+        }
+        
+        .table-header {
+            background-color: #374151;
+        }
+        
+        .table-row:hover {
+            background-color: #374151;
+        }
+        
+        .form-field label {
+            color: #d1d5db;
+        }
+        
+        .modal-content {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+        }
+        
+        /* Ensure all inputs have consistent dark styling */
+        input[type="text"], 
+        input[type="password"], 
+        input[type="number"], 
+        select {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+            color: #f9fafb !important;
+        }
+        
+        input[type="text"]:focus, 
+        input[type="password"]:focus, 
+        input[type="number"]:focus, 
+        select:focus {
+            border-color: #6366f1 !important;
+            ring-color: #6366f1 !important;
+            background-color: #374151 !important;
+        }
+        
+        input[type="text"]::placeholder, 
+        input[type="password"]::placeholder, 
+        input[type="number"]::placeholder {
+            color: #9ca3af !important;
+        }
+        
+        /* Button styling consistency */
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background-color: #4338ca;
+        }
+        
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        
+        .btn-warning {
+            background-color: #d97706;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-warning:hover {
+            background-color: #b45309;
+        }
+        
+        .btn-danger {
+            background-color: #dc2626;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-danger:hover {
+            background-color: #b91c1c;
+        }
+        
+        .btn-info {
+            background-color: #2563eb;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-info:hover {
+            background-color: #1d4ed8;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <!-- Main Content Area -->
+    <main class="flex items-center justify-center min-h-screen p-8">
+        <div class="w-full max-w-6xl">
+            <div class="bg-gray-800 rounded-lg shadow-xl p-10 border border-gray-700">
+                <h1 class="text-4xl font-bold text-gray-100 mb-8 text-center">Admin Panel</h1>
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-6 space-y-3">
+                            {% for category, message in messages %}
+                                <div class="bg-{{ 'green' if category == 'success' else 'yellow' if category == 'warning' else 'red' }}-900 border border-{{ 'green' if category == 'success' else 'yellow' if category == 'warning' else 'red' }}-600 text-{{ 'green' if category == 'success' else 'yellow' if category == 'warning' else 'red' }}-200 px-4 py-3 rounded-lg shadow-sm">
+                                    <span class="block sm:inline">{{ message }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Add Database Form -->
+                <div class="bg-gray-700 rounded-lg p-6 mb-8 border border-gray-600">
+                    <h2 class="text-xl font-semibold text-gray-100 mb-4">Add New Database Configuration</h2>
+                    <form method="POST">
+                        <input type="hidden" name="action" value="add">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div class="form-field">
+                                <label for="db_name" class="block text-sm font-medium text-gray-300 mb-2">Database Name</label>
+                                <input type="text" id="db_name" name="db_name" 
+                                       class="block w-full p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-600 text-gray-100 placeholder-gray-400" 
+                                       placeholder="db_username" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="db_user" class="block text-sm font-medium text-gray-300 mb-2">Database User</label>
+                                <input type="text" id="db_user" name="db_user" 
+                                       class="block w-full p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-600 text-gray-100 placeholder-gray-400" 
+                                       required>
+                            </div>
+                            <div class="form-field">
+                                <label for="db_password" class="block text-sm font-medium text-gray-300 mb-2">Database Password</label>
+                                <input type="password" id="db_password" name="db_password" 
+                                       class="block w-full p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-600 text-gray-100 placeholder-gray-400" 
+                                       required>
+                            </div>
+                            <div class="form-field">
+                                <label for="membership_plan" class="block text-sm font-medium text-gray-300 mb-2">Membership Plan</label>
+                                <select id="membership_plan" name="membership_plan" 
+                                        class="block w-full p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-600 text-gray-100">
+                                    <option value="Trial">Trial (7 days)</option>
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Yearly">Yearly</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label for="membership_payment" class="block text-sm font-medium text-gray-300 mb-2">Membership Payment</label>
+                                <input type="number" id="membership_payment" name="membership_payment" step="0.01" min="0" 
+                                       class="block w-full p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-600 text-gray-100 placeholder-gray-400" 
+                                       value="0.00" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="trial_days" class="block text-sm font-medium text-gray-300 mb-2">Trial Days</label>
+                                <input type="number" id="trial_days" name="trial_days" min="0" max="30"
+                                       class="block w-full p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-600 text-gray-100 placeholder-gray-400" 
+                                       value="7">
+                            </div>
+                        </div>
+                        <div class="mt-6">
+                            <button type="submit" class="w-full btn-primary py-3 px-6 rounded-md font-medium focus:ring-4 focus:ring-indigo-300">
+                                Add Database Configuration
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Database Configurations Table -->
+                <div class="bg-gray-700 rounded-lg border border-gray-600 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-600">
+                        <h2 class="text-xl font-semibold text-gray-100">Database Configurations</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-600">
+                            <thead class="table-header bg-gray-600">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">ID</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Database</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">User</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Plan</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Payment</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Trial Period</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Membership</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">Renewal</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-gray-700 divide-y divide-gray-600">
+                                {% for config in configs %}
+                                    <tr class="table-row hover:bg-gray-600 transition-colors duration-200">
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">{{ config.id }}</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200 font-medium">{{ config.db_name }}</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">{{ config.db_user }}</td>
+                                        
+                                        <!-- Status -->
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm">
+                                            {% if config.user_settings and config.user_settings.updated_at %}
+                                                {% set expires = config.user_settings.updated_at %}
+                                                {% if config.user_settings.membership_plan == 'Trial' %}
+                                                    {% if now > expires %}
+                                                        <span class="badge badge-expired">Trial Expired</span>
+                                                    {% else %}
+                                                        <span class="badge badge-trial">Trial Active</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    {% if now > expires %}
+                                                        <span class="badge badge-expired">Expired</span>
+                                                    {% else %}
+                                                        <span class="badge badge-active">Active</span>
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge badge-pending">Pending</span>
+                                            {% endif %}
+                                        </td>
+
+                                        <!-- Plan -->
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">
+                                            {{ config.user_settings.membership_plan if config.user_settings else 'Trial' }}
+                                        </td>
+
+                                        <!-- Payment -->
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200 font-medium">
+                                            ₹{{ config.user_settings.membership_payment | floatformat(2) if config.user_settings else '0.00' }}
+                                        </td>
+
+                                        <!-- Trial Period -->
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">
+                                            {% if config.user_settings and config.user_settings.updated_at %}
+                                                {% if config.user_settings.membership_plan == 'Trial' %}
+                                                    {{ config.user_settings.created_at | strftime('%Y-%m-%d') if config.user_settings.created_at else 'N/A' }} to 
+                                                    {{ config.user_settings.updated_at | strftime('%Y-%m-%d') }}
+                                                {% else %}
+                                                    {{ config.created_at | strftime('%Y-%m-%d') if config.created_at else 'N/A' }} to 
+                                                    {{ (config.created_at + timedelta(days=config.user_settings.trial_days)) | strftime('%Y-%m-%d') if config.created_at else 'N/A' }}
+                                                {% endif %}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </td>
+
+                                        <!-- Membership Period -->
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">
+                                            {% if config.user_settings and config.user_settings.updated_at and config.user_settings.membership_plan != 'Trial' %}
+                                                {{ config.user_settings.updated_at | strftime('%Y-%m-%d') }} to 
+                                                {{ (config.user_settings.updated_at + timedelta(days=30 if config.user_settings.membership_plan == 'Monthly' else 365)) | strftime('%Y-%m-%d') }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </td>
+
+                                        <!-- Renewal Due -->
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-200">
+                                            {% if config.user_settings and config.user_settings.updated_at and config.user_settings.membership_plan != 'Trial' %}
+                                                {% set renewal_date = config.user_settings.updated_at + timedelta(days=30 if config.user_settings.membership_plan == 'Monthly' else 365) %}
+                                                {{ renewal_date | strftime('%Y-%m-%d') }}
+                                                {% set days_left = (renewal_date - now).days %}
+                                                <div class="text-xs text-gray-400">({{ days_left }} days left)</div>
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </td>
+                                        
+                                        <!-- Actions -->
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm">
+                                            <div class="flex justify-center gap-2">
+                                                <button onclick="editConfig(
+                                                    {{ config.id }},
+                                                    '{{ config.db_name | escape }}',
+                                                    '{{ config.db_user | escape }}',
+                                                    '{{ config.db_password | escape }}',
+                                                    '{{ config.user_settings.membership_plan if config.user_settings else 'Trial' | escape }}',
+                                                    '{{ config.user_settings.membership_payment if config.user_settings else 0.00 | escape }}',
+                                                    '{{ config.user_settings.trial_days if config.user_settings else 7 | escape }}'
+                                                )"
+                                                class="btn-warning px-3 py-1 rounded-md text-xs font-medium focus:ring-2 focus:ring-yellow-300">
+                                                    Edit
+                                                </button>
+                                                <form method="POST" action="{{ url_for('admin_panel') }}" class="inline">
+                                                    <input type="hidden" name="action" value="delete">
+                                                    <input type="hidden" name="config_id" value="{{ config.id }}">
+                                                    <button type="submit" class="btn-danger px-3 py-1 rounded-md text-xs font-medium focus:ring-2 focus:ring-red-300" 
+                                                            onclick="return confirm('Are you sure you want to delete this configuration?');">
+                                                        Delete
+                                                    </button>
+                                                </form>
+                                                <a href="{{ url_for('admin_user_details', db=config.db_name, user=config.db_user) }}" 
+                                                   class="btn-info px-3 py-1 rounded-md text-xs font-medium focus:ring-2 focus:ring-blue-300 inline-block">
+                                                    Details
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Edit Modal -->
+                <div id="editModal" class="fixed inset-0 bg-black bg-opacity-75 hidden flex items-center justify-center z-50">
+                    <div class="modal-content p-6 rounded-lg w-full max-w-4xl mx-4 max-h-screen overflow-y-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-2xl font-bold text-gray-100">Edit Database Configuration</h2>
+                            <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-200 text-2xl font-bold">×</button>
+                        </div>
+                        <form method="POST">
+                            <input type="hidden" name="action" value="update">
+                            <input type="hidden" name="config_id" id="edit_config_id">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <div class="form-field">
+                                    <label for="edit_db_name" class="block text-sm font-medium text-gray-300 mb-2">Database Name</label>
+                                    <input type="text" id="edit_db_name" name="db_name" 
+                                           class="block w-full p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-600 text-gray-100 placeholder-gray-400" 
+                                           required>
+                                </div>
+                                <div class="form-field">
+                                    <label for="edit_db_user" class="block text-sm font-medium text-gray-300 mb-2">Database User</label>
+                                    <input type="text" id="edit_db_user" name="db_user" 
+                                           class="block w-full p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-600 text-gray-100 placeholder-gray-400" 
+                                           required>
+                                </div>
+                                <div class="form-field">
+                                    <label for="edit_db_password" class="block text-sm font-medium text-gray-300 mb-2">Database Password</label>
+                                    <input type="password" id="edit_db_password" name="db_password" 
+                                           class="block w-full p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-600 text-gray-100 placeholder-gray-400" 
+                                           required>
+                                </div>
+                                <div class="form-field">
+                                    <label for="edit_membership_plan" class="block text-sm font-medium text-gray-300 mb-2">Membership Plan</label>
+                                    <select id="edit_membership_plan" name="membership_plan" 
+                                            class="block w-full p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-600 text-gray-100">
+                                        <option value="Trial">Trial</option>
+                                        <option value="Monthly">Monthly</option>
+                                        <option value="Yearly">Yearly</option>
+                                    </select>
+                                </div>
+                                <div class="form-field">
+                                    <label for="edit_membership_payment" class="block text-sm font-medium text-gray-300 mb-2">Membership Payment</label>
+                                    <input type="number" id="edit_membership_payment" name="membership_payment" step="0.01" min="0" 
+                                           class="block w-full p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-600 text-gray-100 placeholder-gray-400" 
+                                           required>
+                                </div>
+                                <div class="form-field">
+                                    <label for="edit_trial_days" class="block text-sm font-medium text-gray-300 mb-2">Trial Days</label>
+                                    <input type="number" id="edit_trial_days" name="trial_days" min="0" max="30"
+                                           class="block w-full p-3 border border-gray-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-600 text-gray-100 placeholder-gray-400">
+                                </div>
+                            </div>
+                            <div class="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-600">
+                                <button type="button" onclick="closeEditModal()" class="btn-secondary px-6 py-2 rounded-md font-medium focus:ring-2 focus:ring-gray-300">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="btn-primary px-6 py-2 rounded-md font-medium focus:ring-2 focus:ring-indigo-300">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Logout Link -->
+                <div class="mt-8 text-center border-t border-gray-600 pt-6">
+                    <a href="{{ url_for('admin_logout') }}" class="text-indigo-400 hover:text-indigo-300 font-medium transition-colors duration-200">
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function editConfig(id, db_name, db_user, db_password, membership_plan, membership_payment, trial_days) {
+            document.getElementById('edit_config_id').value = id;
+            document.getElementById('edit_db_name').value = db_name;
+            document.getElementById('edit_db_user').value = db_user;
+            document.getElementById('edit_db_password').value = db_password;
+            document.getElementById('edit_membership_plan').value = membership_plan;
+            document.getElementById('edit_membership_payment').value = membership_payment;
+            document.getElementById('edit_trial_days').value = trial_days || 7;
+            document.getElementById('editModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+            document.body.style.overflow = 'auto'; // Restore scrolling
+        }
+
+        // Close modal when clicking outside of it
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeEditModal();
+            }
+        });
+    </script>
+</body>
+</html>
