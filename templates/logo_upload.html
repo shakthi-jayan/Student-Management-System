@@ -249,14 +249,24 @@
         .form-field input {
             width: 100%;
         }
+        
+        /* FIXED: Significantly reduced spacing */
         main {
-            margin-left: 16rem;
-            width: calc(100% - 16rem);
+            margin-left: 12rem; /* Reduced from 14rem */
+            width: calc(100% - 12rem);
+            padding: 1.5rem; /* Increased padding for better content spacing */
         }
+        
+        /* Sidebar width adjustment - made narrower */
+        .sidebar-width {
+            width: 12rem; /* Reduced from 15rem */
+        }
+        
         @media (max-width: 768px) {
             main {
                 margin-left: 0;
                 width: 100%;
+                padding: 1rem;
             }
         }
         .back-link {
@@ -267,15 +277,20 @@
 <body class="font-sans light">
     <div class="flex min-h-screen">
         <!-- Sidebar (Navigation Bar) -->
-        <aside class="w-64 p-4 flex-shrink-0 min-h-screen">
+        <aside class="w-64 fixed h-screen bg-gray-900 text-white">
             <nav class="nav-container w-64 fixed inset-y-0 left-0 flex flex-col h-screen shadow-lg">
                 <!-- Logo Section -->
                 <div class="flex flex-col items-center mb-6 mt-6">
                     <a href="{{ url_for('logo_upload', db=db) }}" class="group">
-                        <img src="{% if logo_path %}{{ url_for('static', filename=logo_path) }}{% else %}{{ url_for('static', filename='default_logo.png') }}{% endif %}" alt="Logo" class="w-32 h-auto border-2 border-gray-600 group-hover:border-indigo-500 transition duration-200">
+                        {% if logo_path %}
+                            <img src="{{ url_for('static', filename=logo_path) }}" alt="Current Logo" 
+                                 class="w-32 h-auto border-2 border-gray-600 group-hover:border-indigo-500 transition duration-200">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='image/default_logo.png') }}" alt="Default Logo" 
+                                 class="w-32 h-auto border-2 border-gray-600 group-hover:border-indigo-500 transition duration-200">
+                        {% endif %}
                     </a>
                 </div>
-                
                 <!-- Navigation Links -->
                 <div class="flex flex-col space-y-2 flex-grow px-4">
                     <div class="flex items-center space-x-3">
@@ -336,11 +351,11 @@
             </nav>
         </aside>
 
-        <!-- Main Content Area -->
-        <main class="flex-1 p-8 bg-gray-100">
-            <div class="w-full max-w-5xl mx-auto">
-                <div class="bg-gray-800 rounded-lg shadow-lg p-10">
-                    <h1 class="text-4xl font-bold text-gray-100 mb-8 text-center">Upload Logo</h1>
+        <!-- Main Content Area - Much closer to sidebar -->
+        <main class="flex-1 bg-gray-100">
+            <div class="w-full max-w-4xl mx-auto">
+                <div class="bg-gray-800 rounded-lg shadow-lg p-8">
+                    <h1 class="text-4xl font-bold text-gray-100 mb-6 text-center">Upload Logo</h1>
 
                     <!-- Flash Messages -->
                     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -358,15 +373,30 @@
                     <!-- Current Logo -->
                     <div class="mb-6">
                         <h2 class="text-2xl font-semibold text-gray-100 mb-2">Current Logo</h2>
-                        <img src="{% if logo_path %}{{ url_for('static', filename=logo_path) }}{% else %}{{ url_for('static', filename='default_logo.png') }}{% endif %}" alt="Current Logo" class="w-32 h-32 object-contain border border-gray-700 rounded">
+                        {% if logo_path %}
+                            <img src="{{ url_for('static', filename=logo_path) }}" 
+                                 alt="Current Logo" 
+                                 class="w-32 h-32 object-contain border border-gray-700 rounded">
+                        {% elif is_new_user %}
+                            <p class="text-gray-300">No logo set (new user)</p>
+                        {% else %}
+                            <img src="{{ url_for('static', filename='image/default_logo.png') }}" 
+                                 alt="Default Logo" 
+                                 class="w-32 h-32 object-contain border border-gray-700 rounded">
+                        {% endif %}
                     </div>
 
                     <!-- Upload Form -->
                     <form method="POST" enctype="multipart/form-data" class="mb-8">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
                             <div class="form-field md:col-span-2">
-                                <label for="photo" class="block text-lg font-medium text-gray-300">Select New Logo</label>
-                                <input type="file" id="photo" name="photo" accept=".png,.jpg,.jpeg,.gif" 
+                                <label for="photo" class="block text-lg font-medium text-gray-300">
+                                    Select New Logo
+                                </label>
+                                <input type="file" 
+                                       id="photo" 
+                                       name="photo" 
+                                       accept=".png,.jpg,.jpeg,.gif" 
                                        class="mt-2 block w-full p-3 border border-gray-700 rounded-md focus:ring-indigo-500 focus:border-indigo-500 bg-gray-700 text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-indigo-600 file:text-white hover:file:bg-indigo-700">
                             </div>
                             <div class="form-field">
@@ -375,11 +405,24 @@
                                 </button>
                             </div>
                         </div>
+                        
+                        <!-- Remove Logo Button (only shown if logo exists) -->
+                        {% if logo_path %}
+                            <div class="mt-6">
+                                <button type="submit" 
+                                        name="remove_logo" 
+                                        class="w-full bg-red-600 text-white px-4 py-3 rounded-md hover:bg-red-700 focus:ring-4 focus:ring-red-300">
+                                    Remove Logo
+                                </button>
+                            </div>
+                        {% endif %}
                     </form>
 
                     <!-- Back to Dashboard Link -->
                     <div class="back-link text-center">
-                        <a href="{{ url_for('user_dashboard', db=db) }}" class="text-indigo-600 hover:text-indigo-800">← Back to Dashboard</a>
+                        <a href="{{ url_for('user_dashboard', db=db) }}" class="text-indigo-600 hover:text-indigo-800">
+                            ← Back to Dashboard
+                        </a>
                     </div>
                 </div>
             </div>

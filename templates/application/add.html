@@ -219,10 +219,16 @@
         <!-- Sidebar (Navigation Bar) -->
         <aside class="w-64 p-4 flex-shrink-0 min-h-screen">
             <nav class="nav-container w-64 fixed inset-y-0 left-0 flex flex-col h-screen shadow-lg">
-                <!-- Logo Section -->
+                <!-- Logo Section - Properly Aligned -->
                 <div class="flex flex-col items-center mb-6 mt-6">
                     <a href="{{ url_for('logo_upload', db=db) }}" class="group">
-                        <img src="{{ url_for('static', filename=logo_path) }}" alt="Logo" class="w-32 h-auto border-2 border-gray-600 group-hover:border-indigo-500 transition duration-200">
+                        {% if logo_path %}
+                            <img src="{{ url_for('static', filename=logo_path) }}" alt="Current Logo" 
+                                 class="w-32 h-auto border-2 border-gray-600 group-hover:border-indigo-500 transition duration-200">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='image/default_logo.png') }}" alt="Default Logo" 
+                                 class="w-32 h-auto border-2 border-gray-600 group-hover:border-indigo-500 transition duration-200">
+                        {% endif %}
                     </a>
                 </div>
                 

@@ -25,7 +25,7 @@ app.secret_key = 'your_secret_key'
 
 # MySQL Root Configuration
 MYSQL_ROOT_USER = 'root'
-MYSQL_ROOT_PASSWORD = ''
+MYSQL_ROOT_PASSWORD = 'shakthi19'
 
 # Admin database name
 ADMIN_DB = 'admin_db'
@@ -51,21 +51,28 @@ def connect_db(user, password, db):
 def get_logo_path(db, user):
     DATABASES = get_databases()
     if db not in DATABASES:
-        return 'image/logo.png'
+        return None  # None means no logo set
     connection = connect_db(user, DATABASES[db]['password'], db)
     if connection:
         cursor = connection.cursor(dictionary=True)
         try:
             cursor.execute("SELECT logo_path FROM user_settings WHERE user = %s", (user,))
             result = cursor.fetchone()
-            return result['logo_path'] if result and result['logo_path'] else 'image/logo.png'
+            if result and result['logo_path']:
+                return result['logo_path']
+            # Check if user is new (no record in user_settings)
+            cursor.execute("SELECT COUNT(*) as count FROM user_settings WHERE user = %s", (user,))
+            count_result = cursor.fetchone()
+            if count_result['count'] == 0:
+                return "new_user"  # Special value to indicate new user
+            return None
         except Error as e:
             print(f"Error fetching logo path: {e}")
-            return 'image/logo.png'
+            return None
         finally:
             cursor.close()
             connection.close()
-    return 'image/logo.png'
+    return None
 
 def get_databases():
     admin_conn = get_admin_connection()
@@ -933,14 +940,17 @@ def account(db):
         invoices = cursor.fetchall()
             
         logo_path = get_logo_path(db, session['user'])
-            
+        if not logo_path or logo_path == "new_user":
+            logo_path = 'image/default_logo.png'  # Default fallback
+        user_info['logo_path'] = logo_path  # Ensure this is always a non-empty string
+    
         return render_template('account.html',
-                            db=db,
-                            user=session['user'],
-                            user_info=user_info,
-                            invoices=invoices,
-                            logo_path=logo_path,
-                            now=current_date)
+                        db=db,
+                        user=session['user'],
+                        user_info=user_info,
+                        invoices=invoices,
+                        logo_path=logo_path,
+                        now=current_date)
     except Error as e:
         flash(f'Database error: {str(e)}', 'danger')
         return redirect(url_for('user_dashboard', db=db))
@@ -1144,6 +1154,20 @@ def logo_upload(db):
     cursor = connection.cursor(dictionary=True)
     try:
         if request.method == 'POST':
+            # Handle logo removal
+            if 'remove_logo' in request.form:
+                cursor.execute("""
+                    INSERT INTO user_settings (user, logo_path, updated_at)
+                    VALUES (%s, NULL, %s)
+                    ON DUPLICATE KEY UPDATE
+                    logo_path = NULL,
+                    updated_at = %s
+                """, (user, datetime.now(), datetime.now()))
+                connection.commit()
+                flash('Logo removed successfully', 'success')
+                return redirect(url_for('logo_upload', db=db))
+            
+            # Handle logo upload
             if 'photo' not in request.files:
                 flash('No file uploaded', 'danger')
                 return redirect(url_for('logo_upload', db=db))
@@ -1180,9 +1204,14 @@ def logo_upload(db):
         # Fetch current logo for display
         cursor.execute("SELECT logo_path FROM user_settings WHERE user = %s", (user,))
         user_settings = cursor.fetchone()
-        logo_path = user_settings['logo_path'] if user_settings and user_settings['logo_path'] else 'image/logo.png'
+        logo_path = user_settings['logo_path'] if user_settings and user_settings['logo_path'] else None
         
-        return render_template('logo_upload.html', db=db, logo_path=logo_path)
+        # Check if user is new (no record in user_settings)
+        cursor.execute("SELECT COUNT(*) as count FROM user_settings WHERE user = %s", (user,))
+        count_result = cursor.fetchone()
+        is_new_user = count_result['count'] == 0
+        
+        return render_template('logo_upload.html', db=db, logo_path=logo_path, is_new_user=is_new_user)
     
     except Error as e:
         flash(f'Database error: {str(e)}', 'danger')
@@ -1289,14 +1318,10 @@ def analytics_dashboard(db):
         enrollment_trends = []
         not_joined_students = []
 
-        # Log query parameters for debugging
-        logger.debug(f"Period: {period}, Start Date: {start_date}, End Date: {end_date}, Params: {params}")
-
         # Fetch total students count
         query = f"SELECT COUNT(*) as total_students FROM student_details {date_condition}"
         cursor.execute(query, params)
         total_students = cursor.fetchone()['total_students'] or 0
-        logger.debug(f"Total Students: {total_students}")
 
         # Fetch active learners (students with activity in date range)
         if period != 'not_joined':
@@ -1313,7 +1338,6 @@ def analytics_dashboard(db):
             cursor.execute(query, params * 2 if fee_date_condition else params)
             active_learners = cursor.fetchone()['active_learners'] or 0
             inactive_learners = total_students - active_learners
-            logger.debug(f"Active Learners: {active_learners}, Inactive: {inactive_learners}")
         else:
             active_learners = 0
             inactive_learners = 0
@@ -1328,7 +1352,6 @@ def analytics_dashboard(db):
         cursor.execute(query, params)
         course_counts = {row['course'] or 'Unknown': row['count'] for row in cursor.fetchall()}
         total_courses = len(course_counts)
-        logger.debug(f"Course Counts: {course_counts}")
 
         # Fetch payment status counts
         query = f"""
@@ -1342,7 +1365,6 @@ def analytics_dashboard(db):
         payment_status = cursor.fetchone()
         fully_paid_count = payment_status['fully_paid'] or 0
         pending_count = payment_status['pending'] or 0
-        logger.debug(f"Fully Paid: {fully_paid_count}, Pending: {pending_count}")
 
         # Fetch revenue data
         query = f"""
@@ -1357,7 +1379,6 @@ def analytics_dashboard(db):
         total_revenue = float(revenue_data['total_revenue'] or 0)
         collected_revenue = float(revenue_data['collected_revenue'] or 0)
         pending_payments = total_revenue - collected_revenue
-        logger.debug(f"Total Revenue: {total_revenue}, Collected: {collected_revenue}, Pending: {pending_payments}")
 
         # Fetch course performance
         query = f"""
@@ -1380,7 +1401,6 @@ def analytics_dashboard(db):
                 'total_fees': float(row['total_fees'] or 0)
             } for row in cursor.fetchall()
         ]
-        logger.debug(f"Course Performance: {course_performance}")
 
         # Fetch enrollment trends
         if period != 'not_joined':
@@ -1402,7 +1422,6 @@ def analytics_dashboard(db):
                     'revenue': float(row['daily_revenue'] or 0)
                 } for row in cursor.fetchall()
             ]
-        logger.debug(f"Enrollment Trends: {enrollment_trends}")
 
         # Fetch not joined students with both mobile numbers
         if period == 'not_joined':
@@ -1425,13 +1444,15 @@ def analytics_dashboard(db):
                         'created_at': row['created_at']
                     } for row in cursor.fetchall()
                 ]
-                logger.debug(f"Not Joined Students: {not_joined_students}")
 
         # Get top course by fees and enrollments
         max_fee_course = max(course_performance, key=lambda x: x['total_fees'], default={'course': 'None', 'total_fees': 0})
         max_student_course = max(course_performance, key=lambda x: x['total_students'], default={'course': 'None', 'total_students': 0})
 
-        logo_path = get_logo_path(db, user)
+        # Get logo path with fallback to default
+        logo_path = get_logo_path(db, session['user'])
+        if not logo_path or logo_path == "new_user":
+            logo_path = 'image/default_logo.png'  # Default fallback
 
         return render_template(
             'analytics_dashboard.html',
@@ -1458,8 +1479,8 @@ def analytics_dashboard(db):
             max_student_count=max_student_course['total_students'],
             not_joined_students=not_joined_students,
             today=today,
-            start_date=start_date_str or start_date,  # Pass start_date for form
- jede= end_date_str or end_date  # Pass end_date for form
+            start_date=start_date_str or start_date,
+            end_date=end_date_str or end_date
         )
 
     except Exception as e:
@@ -2192,6 +2213,11 @@ def fees(db):
         if connection:
             connection.close()
 
+import io
+from flask import request, session, redirect, url_for, flash, send_file
+import csv
+from mysql.connector import Error
+
 @app.route('/export_application/<db>/<table_name>', methods=['GET'])
 def export_application(db, table_name):
     user = session.get('user')
@@ -2204,83 +2230,79 @@ def export_application(db, table_name):
         return redirect(url_for('login'))
 
     connection = connect_db(user, DATABASES[db]['password'], db)
-    if connection:
-        cursor = connection.cursor(dictionary=True)
-        try:
-            course = request.args.get('course', '').strip()
-            gender = request.args.get('gender', '').strip()
-
-            query = """
-                SELECT 
-                    sd.name,
-                    sis.father_name,
-                    COALESCE(sis.mobile_number1, '') AS mobile_number1,
-                    COALESCE(sis.mobile_number2, '') AS mobile_number2,
-                    sd.course,
-                    sd.created_at
-                FROM student_details sd
-                LEFT JOIN student_information_sheet sis 
-                    ON LOWER(TRIM(sd.name)) = LOWER(TRIM(sis.name))
-                WHERE 1=1
-            """
-            params = []
-
-            if course:
-                query += " AND sd.course = %s"
-                params.append(course)
-            if gender:
-                query += " AND sd.sex = %s"
-                params.append(gender)
-
-            cursor.execute(query, params)
-            rows = cursor.fetchall()
-
-            if not rows:
-                flash('No data available to export with the applied filters.', 'danger')
-                return redirect(url_for('user_dashboard', db=db, course=course, gender=gender))
-
-            fieldnames = ['Name', 'Father Name', 'Mobile Number 1', 'Mobile Number 2', 'Course', 'Created Date']
-
-            output = io.StringIO()
-            writer = csv.writer(output)
-            writer.writerow(fieldnames)
-
-            for row in rows:
-                created_date = row['created_at'].strftime('%Y-%m-%d') if row['created_at'] else ''
-                writer.writerow([
-                    row.get('name', ''),
-                    row.get('father_name', ''),
-                    row.get('mobile_number1', ''),
-                    row.get('mobile_number2', ''),
-                    row.get('course', ''),
-                    created_date
-                ])
-
-            output.seek(0)
-
-            filter_parts = []
-            if course:
-                filter_parts.append(f"course_{course}")
-            if gender:
-                filter_parts.append(f"gender_{gender}")
-            filter_suffix = "_" + "_".join(filter_parts) if filter_parts else ""
-
-            return send_file(
-                io.BytesIO(output.getvalue().encode('utf-8')),
-                mimetype='text/csv',
-                as_attachment=True,
-                download_name=f'{table_name}{filter_suffix}.csv'
-            )
-
-        except Error as e:
-            flash(f"Failed to export data: {e}", "danger")
-            return redirect(url_for('user_dashboard', db=db))
-        finally:
-            cursor.close()
-            connection.close()
-    else:
+    if not connection:
         flash('Failed to connect to the database', "danger")
         return redirect(url_for('login'))
+
+    cursor = connection.cursor(dictionary=True)
+    try:
+        course = request.args.get('course', '').strip()
+        gender = request.args.get('gender', '').strip()
+
+        query = """
+            SELECT 
+                name,
+                COALESCE(mobile_number1, '') AS mobile_number1,
+                COALESCE(mobile_number2, '') AS mobile_number2,
+                course,
+                created_at
+            FROM student_details
+            WHERE 1=1
+        """
+        params = []
+
+        if course:
+            query += " AND course = %s"
+            params.append(course)
+        if gender:
+            query += " AND sex = %s"
+            params.append(gender)
+
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+
+        if not rows:
+            flash('No data available to export with the applied filters.', 'danger')
+            return redirect(url_for('user_dashboard', db=db, course=course, gender=gender))
+
+        fieldnames = ['Name', 'Mobile Number 1', 'Mobile Number 2', 'Course', 'Created Date']
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(fieldnames)
+
+        for row in rows:
+            created_date = row['created_at'].strftime('%Y-%m-%d') if row['created_at'] else ''
+            writer.writerow([
+                row.get('name', ''),
+                row.get('mobile_number1', ''),
+                row.get('mobile_number2', ''),
+                row.get('course', ''),
+                created_date
+            ])
+
+        output.seek(0)
+
+        filter_parts = []
+        if course:
+            filter_parts.append(f"course_{course}")
+        if gender:
+            filter_parts.append(f"gender_{gender}")
+        filter_suffix = "_" + "_".join(filter_parts) if filter_parts else ""
+
+        return send_file(
+            io.BytesIO(output.getvalue().encode('utf-8')),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=f'{table_name}{filter_suffix}.csv'
+        )
+
+    except Error as e:
+        flash(f"Failed to export data: {e}", "danger")
+        return redirect(url_for('user_dashboard', db=db))
+    finally:
+        cursor.close()
+        connection.close()
 
 @app.route('/export_information/<db>', methods=['GET'])
 def export_information(db):
@@ -3242,7 +3264,10 @@ def user_settings(db):
         return redirect(url_for('login'))
 
     cursor = connection.cursor(dictionary=True)
-    logo_path = get_logo_path(db, user)
+    logo_path = get_logo_path(db, session['user'])
+    if not logo_path or logo_path == "new_user":
+        logo_path = 'image/default_logo.png'  # Default fallback
+
     now = datetime.now()
 
     if request.method == 'POST':
@@ -3325,4 +3350,4 @@ def logout():
 
 if __name__ == '__main__':
     initialize_databases()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True) 
