@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, jsonify    
+from flask_tailwind import Tailwind
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime, date, timedelta    
@@ -24,20 +25,20 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 # MySQL Root Configuration
-MYSQL_ROOT_USER = 'root'
-MYSQL_ROOT_PASSWORD = 'shakthi19'
+MYSQL_ROOT_USER = 'admin_csc'
+MYSQL_ROOT_PASSWORD = 'Powerbi@6414'
 
 # Admin database name
 ADMIN_DB = 'admin_db'
 
-RAZORPAY_KEY_ID = 'rzp_test_QXqCaFTaw7eitk'
-RAZORPAY_KEY_SECRET = 'Af4cqMgxwUkJB1eSyddhRhf8'
+RAZORPAY_KEY_ID = 'rzp_live_W78hfX63rdxo3o'
+RAZORPAY_KEY_SECRET = 'EJojvi6GPbwbDrpXQbrRLBL1'
 razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
 def connect_db(user, password, db):
     try:
         connection = mysql.connector.connect(
-            host="127.0.0.1",
+            host="168.231.121.30",
             user=user,
             password=password,
             database=db,
@@ -130,10 +131,21 @@ app.config['SECRET_KEY'] = 'your_secret_key_for_jwt'
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def sanitize_db_name(username):
+    """Convert username to safe database name"""
+    # Replace all non-alphanumeric characters with underscore
+    safe_name = re.sub(r'[^a-zA-Z0-9]', '_', username.lower())
+    # Ensure it starts with a letter
+    if safe_name and safe_name[0].isdigit():
+        safe_name = 'db_' + safe_name
+    # Ensure length is reasonable
+    return safe_name[:64]  # MySQL max length for database names
+    
+
 def get_root_connection():
     try:
         return mysql.connector.connect(
-            host="127.0.0.1",  # Update if different
+            host="168.231.121.30",  # Update if different
             port=3306,        # Update if different
             user=MYSQL_ROOT_USER,
             password=MYSQL_ROOT_PASSWORD,
@@ -143,21 +155,73 @@ def get_root_connection():
         logger.error(f"Root connection error: {e}")
         return None
 
+@app.route('/debug/db_configs')
+def debug_db_configs():
+    if 'admin' not in session:
+        return "Admin access required", 403
+    
+    admin_conn = get_admin_connection()
+    if not admin_conn:
+        return "Admin connection failed", 500
+    
+    cursor = admin_conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM database_configs")
+    configs = cursor.fetchall()
+    cursor.close()
+    admin_conn.close()
+    
+    return jsonify(configs)
+
+@app.route('/debug/test_connection/<db>/<user>/<password>')
+def debug_test_connection(db, user, password):
+    try:
+        conn = connect_db(user, password, db)
+        if conn:
+            conn.close()
+            return jsonify({'success': True})
+        return jsonify({'success': False})
+    except Error as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'errno': e.errno
+        })
+
 def get_admin_connection():
     try:
         conn = mysql.connector.connect(
-                host="127.0.0.1",  # Update if different
-                port=3306,        # Update if different
-                user=MYSQL_ROOT_USER,
-                password=MYSQL_ROOT_PASSWORD,
-                database=ADMIN_DB,
-                charset='utf8'
-            )
-        logger.info(f"Successfully connected to {ADMIN_DB}")
+            host="168.231.121.30",
+            user=MYSQL_ROOT_USER,
+            password=MYSQL_ROOT_PASSWORD,
+            database=ADMIN_DB,
+            connect_timeout=5  # Add timeout
+        )
+        logger.info("Successfully connected to admin database")
         return conn
     except Error as e:
         logger.error(f"Admin connection error: {e}")
         return None
+
+def verify_admin_database():
+    admin_conn = get_admin_connection()
+    if not admin_conn:
+        return False
+    
+    cursor = admin_conn.cursor()
+    try:
+        # Check if tables exist
+        cursor.execute("SHOW TABLES LIKE 'admin_users'")
+        if not cursor.fetchone():
+            return False
+            
+        cursor.execute("SHOW TABLES LIKE 'database_configs'")
+        if not cursor.fetchone():
+            return False
+            
+        return True
+    finally:
+        cursor.close()
+        admin_conn.close()
 
 from datetime import datetime, date, timedelta
 
@@ -180,6 +244,34 @@ def is_digit(value):
     return str(value).isdigit()
 app.jinja_env.filters['is_digit'] = is_digit
 
+@app.route('/debug/check_user/<username>')
+def debug_check_user(username):
+    root_conn = get_root_connection()
+    if not root_conn:
+        return "Failed to connect as root", 500
+    
+    cursor = root_conn.cursor()
+    try:
+        # Check if user exists
+        cursor.execute("SELECT User FROM mysql.user WHERE User = %s", (username,))
+        user_exists = cursor.fetchone() is not None
+        
+        # Check database exists
+        cursor.execute("SHOW DATABASES LIKE %s", (f"db_{username}",))
+        db_exists = cursor.fetchone() is not None
+        
+        return jsonify({
+            'user_exists': user_exists,
+            'db_exists': db_exists,
+            'username': username,
+            'expected_db': f"db_{username}"
+        })
+    except Error as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        cursor.close()
+        root_conn.close()
+
 def initialize_admin_database():
     root_conn = get_root_connection()
     if not root_conn:
@@ -188,12 +280,14 @@ def initialize_admin_database():
         
     cursor = root_conn.cursor()
     try:
+        # Create admin database if it doesn't exist
         cursor.execute(f"CREATE DATABASE IF NOT EXISTS {ADMIN_DB}")
         root_conn.commit()
             
         admin_conn = get_admin_connection()
         admin_cursor = admin_conn.cursor(dictionary=True)
             
+        # Create admin_users table
         admin_cursor.execute("""
             CREATE TABLE IF NOT EXISTS admin_users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -203,6 +297,7 @@ def initialize_admin_database():
             )
         """)
             
+        # Create database_configs table with all required columns
         admin_cursor.execute("""
             CREATE TABLE IF NOT EXISTS database_configs (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -210,16 +305,19 @@ def initialize_admin_database():
                 db_user VARCHAR(50) NOT NULL,
                 db_password VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME
+                updated_at DATETIME,
+                membership_plan VARCHAR(20),
+                membership_payment DECIMAL(10, 2) DEFAULT 0.00
             )
         """)
             
+        # Check if we have at least one admin user
         admin_cursor.execute("SELECT COUNT(*) as count FROM admin_users")
         admin_count = admin_cursor.fetchone()['count']
             
         if admin_count == 0:
-            default_admin = 'admin'
-            default_password = 'admin123'
+            default_admin = 'machodev71@gmail.com'
+            default_password = 'Powerbi@4821'
             hashed_password = bcrypt.hashpw(default_password.encode('utf-8'), bcrypt.gensalt())
             admin_cursor.execute("""
                 INSERT INTO admin_users (username, password)
@@ -230,6 +328,8 @@ def initialize_admin_database():
             
     except Error as e:
         print(f"Admin database initialization error: {e}")
+        if 'admin_conn' in locals() and admin_conn:
+            admin_conn.rollback()
     finally:
         if 'admin_cursor' in locals():
             admin_cursor.close()
@@ -353,7 +453,29 @@ def migrate_database_schema(user_cursor, db_name):
             AND TABLE_SCHEMA = %s
         """, (db_name,))
         existing_columns = {row[0] for row in user_cursor.fetchall()}
+        user_cursor.execute("""
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = 'user_settings' 
+            AND TABLE_SCHEMA = %s
+        """, (db_name,))
+        existing_columns = {row[0] for row in user_cursor.fetchall()}
         
+        # Add email and phone columns if they don't exist
+        if 'email' not in existing_columns:
+            user_cursor.execute("""
+                ALTER TABLE user_settings 
+                ADD COLUMN email VARCHAR(100) DEFAULT NULL
+            """)
+            logger.info(f"Added 'email' column to user_settings in {db_name}")
+
+        if 'phone' not in existing_columns:
+            user_cursor.execute("""
+                ALTER TABLE user_settings 
+                ADD COLUMN phone VARCHAR(20) DEFAULT NULL
+            """)
+            logger.info(f"Added 'phone' column to user_settings in {db_name}")
+
         if 'trial_end_date' not in existing_columns:
             user_cursor.execute("""
                 ALTER TABLE user_settings 
@@ -428,391 +550,529 @@ def migrate_database_schema(user_cursor, db_name):
         logger.error(f"Error during schema migration for {db_name}: {e}")
         raise
 
-def initialize_databases():
-    """Initialize all databases with required tables and schema"""
-    logger.info("Starting database initialization...")
-    
-    try:
-        # Initialize admin database first
-        initialize_admin_database()
-        
-        # Get list of all databases to initialize
-        admin_conn = get_admin_connection()
-        if not admin_conn:
-            raise Exception("Failed to connect to admin database")
+def cleanup_problematic_database():
+    root_conn = get_root_connection()
+    if root_conn:
+        cursor = root_conn.cursor()
+        try:
+            # Use backticks to escape the database name
+            cursor.execute("DROP DATABASE IF EXISTS `db_shakthi-jayan`")
+            cursor.execute("DROP USER IF EXISTS 'shakthi-jayan'@'%'")
             
-        with admin_conn.cursor(dictionary=True) as admin_cursor:
-            admin_cursor.execute("""
-                SELECT db_name, db_user, db_password, updated_at 
-                FROM database_configs
-            """)
-            databases = {
-                row['db_name']: {
-                    'user': row['db_user'],
-                    'password': row['db_password'],
-                    'trial_expires': row['updated_at']
-                }
-                for row in admin_cursor.fetchall()
-            }
-
-        root_conn = get_root_connection()
-        if not root_conn:
-            raise Exception("Failed to connect as root user")
+            admin_conn = get_admin_connection()
+            if admin_conn:
+                admin_cursor = admin_conn.cursor()
+                admin_cursor.execute("DELETE FROM database_configs WHERE db_name = %s", ("db_shakthi-jayan",))
+                admin_conn.commit()
+                admin_cursor.close()
+                admin_conn.close()
             
-        with root_conn.cursor() as root_cursor:
-            for db_name, creds in databases.items():
-                try:
-                    root_cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
-                    root_cursor.execute(f"""
-                        CREATE USER IF NOT EXISTS '{creds['user']}'@'localhost' 
-                        IDENTIFIED BY '{creds['password']}'
-                    """)
-                    root_cursor.execute(f"""
-                        GRANT ALL PRIVILEGES ON {db_name}.* 
-                        TO '{creds['user']}'@'localhost'
-                    """)
-                    logger.info(f"Configured database {db_name} for user {creds['user']}")
-                except Error as e:
-                    logger.error(f"Error setting up database {db_name}: {e}")
-                    raise Exception(f"Database setup failed for {db_name}: {e}")
             root_conn.commit()
-
-        for db_name, creds in databases.items():
-            user_conn = None
-            try:
-                user_conn = connect_db(creds['user'], creds['password'], db_name)
-                if not user_conn:
-                    raise Exception(f"Failed to connect to database {db_name}")
-                with user_conn.cursor() as user_cursor:
-                    user_cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS student_details (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
-                            enroll_no VARCHAR(50) UNIQUE NOT NULL,
-                            course VARCHAR(100) NOT NULL,
-                            sex VARCHAR(10),
-                            name VARCHAR(100) NOT NULL,
-                            father_name VARCHAR(100),
-                            mobile_number1 VARCHAR(20),
-                            mobile_number2 VARCHAR(20), 
-                            address1 VARCHAR(255),
-                            address2 VARCHAR(255),
-                            city VARCHAR(100),
-                            pincode VARCHAR(20),
-                            qualification VARCHAR(100),
-                            date_of_join DATE,
-                            age INT,
-                            scheme VARCHAR(100),
-                            date_of_birth DATE,
-                            concession VARCHAR(100),
-                            net_fees DECIMAL(10, 2) DEFAULT 0,
-                            total_fees DECIMAL(10, 2) DEFAULT 0,
-                            fees DECIMAL(10, 2) DEFAULT 0,
-                            balance_fees DECIMAL(10, 2) DEFAULT 0,
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            updated_at DATETIME
-                        )
-                    """)
-                    user_cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS fee_payments (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
-                            enroll_no VARCHAR(50) NOT NULL,
-                            fee_amount DECIMAL(10, 2) NOT NULL,
-                            bill_number VARCHAR(50) NOT NULL,
-                            payment_date DATETIME NOT NULL,
-                            FOREIGN KEY (enroll_no) REFERENCES student_details(enroll_no) ON DELETE CASCADE
-                        )
-                    """)
-                    user_cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS student_information_sheet (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
-                            sno VARCHAR(50),
-                            name VARCHAR(100) NOT NULL,
-                            father_name VARCHAR(100),
-                            mobile_number1 VARCHAR(20),
-                            mobile_number2 VARCHAR(20),
-                            employment_status VARCHAR(100),
-                            address VARCHAR(255),
-                            pin_code VARCHAR(20),
-                            sex VARCHAR(10),
-                            qualification VARCHAR(100),
-                            reason TEXT,
-                            course_interested VARCHAR(100),
-                            joining_plan VARCHAR(100),
-                            source_info TEXT,
-                            scheme VARCHAR(100) DEFAULT 'NONE',
-                            status VARCHAR(20) DEFAULT 'Pending',
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            updated_at DATETIME
-                        )
-                    """)
-                    user_cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS user_settings (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
-                            user VARCHAR(50) NOT NULL,
-                            membership_plan VARCHAR(50) DEFAULT 'Trial',
-                            membership_payment DECIMAL(10, 2) DEFAULT 0.00,
-                            logo_path VARCHAR(255) DEFAULT 'image/logo.png',
-                            trial_start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            trial_end_date DATETIME,
-                            subscription_start_date DATETIME,
-                            subscription_end_date DATETIME,
-                            payment_status VARCHAR(20) DEFAULT 'inactive',
-                            last_payment_date DATETIME,
-                            next_renewal_date DATETIME,
-                            max_students INT DEFAULT 2147483647,
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                            updated_at DATETIME,
-                            UNIQUE (user)
-                        )
-                    """)
-                    user_cursor.execute("""
-                        CREATE TABLE IF NOT EXISTS payment_invoices (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
-                            user VARCHAR(50) NOT NULL,
-                            order_id VARCHAR(100) NOT NULL,
-                            payment_id VARCHAR(100),
-                            amount DECIMAL(10, 2) NOT NULL,
-                            status VARCHAR(20) NOT NULL,
-                            plan_type VARCHAR(20) DEFAULT NULL,
-                            invoice_number VARCHAR(50) DEFAULT NULL,
-                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                        )
-                    """)
-                    migrate_database_schema(user_cursor, db_name)
-                    if creds.get('trial_expires'):
-                        user_cursor.execute("""
-                            INSERT INTO user_settings (
-                                user, membership_plan, membership_payment, 
-                                logo_path, trial_end_date, updated_at
-                            ) VALUES (%s, %s, %s, %s, %s, %s)
-                            ON DUPLICATE KEY UPDATE
-                                membership_plan = VALUES(membership_plan),
-                                membership_payment = VALUES(membership_payment),
-                                trial_end_date = VALUES(trial_end_date),
-                                updated_at = VALUES(updated_at)
-                        """, (
-                            creds['user'],
-                            'Trial',
-                            0.00,
-                            'image/logo.png',
-                            creds['trial_expires'],
-                            datetime.now()
-                        ))
-                    user_conn.commit()
-                    logger.info(f"Successfully initialized database: {db_name}")
-            except Error as e:
-                logger.error(f"Error initializing database {db_name}: {e}")
-                if user_conn:
-                    user_conn.rollback()
-                raise
-            finally:
-                if user_conn:
-                    user_conn.close()
-    except Exception as e:
-        logger.error(f"Database initialization failed: {e}")
-        raise
-    finally:
-        if 'admin_conn' in locals() and admin_conn:
-            admin_conn.close()
-        if 'root_conn' in locals() and root_conn:
+            print("Successfully cleaned up problematic database")
+        except Error as e:
+            print(f"Error during cleanup: {e}")
+            root_conn.rollback()
+        finally:
+            cursor.close()
             root_conn.close()
+
+# Add this at the beginning of your imports
+import traceback
+from threading import Lock
+
+# Add this after your app configuration
+db_init_lock = Lock()  # Prevent concurrent database initialization
+
+def create_user_tables(db_name, db_user, db_password):
+    """Create all required tables in a user's database"""
+    try:
+        user_conn = connect_db(db_user, db_password, db_name)
+        if not user_conn:
+            logger.error(f"Failed to connect to user database {db_name}")
+            return False
+
+        with user_conn.cursor() as user_cursor:
+            # Start transaction
+            user_conn.start_transaction()
+
+            # Create student_details table
+            user_cursor.execute("""
+                CREATE TABLE IF NOT EXISTS student_details (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    enroll_no VARCHAR(50) UNIQUE NOT NULL,
+                    course VARCHAR(100) NOT NULL,
+                    sex VARCHAR(10),
+                    name VARCHAR(100) NOT NULL,
+                    father_name VARCHAR(100),
+                    mobile_number1 VARCHAR(20),
+                    mobile_number2 VARCHAR(20), 
+                    address1 VARCHAR(255),
+                    address2 VARCHAR(255),
+                    city VARCHAR(100),
+                    pincode VARCHAR(20),
+                    qualification VARCHAR(100),
+                    date_of_join DATE,
+                    age INT,
+                    scheme VARCHAR(100),
+                    date_of_birth DATE,
+                    concession VARCHAR(100),
+                    net_fees DECIMAL(10, 2) DEFAULT 0,
+                    total_fees DECIMAL(10, 2) DEFAULT 0,
+                    fees DECIMAL(10, 2) DEFAULT 0,
+                    balance_fees DECIMAL(10, 2) DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME
+                )
+            """)
+
+            # Create fee_payments table
+            user_cursor.execute("""
+                CREATE TABLE IF NOT EXISTS fee_payments (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    enroll_no VARCHAR(50) NOT NULL,
+                    fee_amount DECIMAL(10, 2) NOT NULL,
+                    bill_number VARCHAR(50) NOT NULL,
+                    payment_date DATETIME NOT NULL,
+                    FOREIGN KEY (enroll_no) REFERENCES student_details(enroll_no) ON DELETE CASCADE
+                )
+            """)
+
+            # Create student_information_sheet table
+            user_cursor.execute("""
+                CREATE TABLE IF NOT EXISTS student_information_sheet (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    sno VARCHAR(50),
+                    name VARCHAR(100) NOT NULL,
+                    father_name VARCHAR(100),
+                    mobile_number1 VARCHAR(20),
+                    mobile_number2 VARCHAR(20),
+                    employment_status VARCHAR(100),
+                    address VARCHAR(255),
+                    pin_code VARCHAR(20),
+                    sex VARCHAR(10),
+                    qualification VARCHAR(100),
+                    reason TEXT,
+                    course_interested VARCHAR(100),
+                    joining_plan VARCHAR(100),
+                    source_info TEXT,
+                    scheme VARCHAR(100) DEFAULT 'NONE',
+                    status VARCHAR(20) DEFAULT 'Pending',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME
+                )
+            """)
+
+            # Create user_settings table
+            user_cursor.execute("""
+                CREATE TABLE IF NOT EXISTS user_settings (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user VARCHAR(50) NOT NULL,
+                    email VARCHAR(100) DEFAULT NULL,
+                    phone VARCHAR(20) DEFAULT NULL,
+                    membership_plan VARCHAR(50) DEFAULT 'Trial',
+                    membership_payment DECIMAL(10, 2) DEFAULT 0.00,
+                    logo_path VARCHAR(255) DEFAULT 'image/default_logo.png',
+                    trial_start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    trial_end_date DATETIME,
+                    subscription_start_date DATETIME,
+                    subscription_end_date DATETIME,
+                    payment_status VARCHAR(20) DEFAULT 'inactive',
+                    last_payment_date DATETIME,
+                    next_renewal_date DATETIME,
+                    max_students INT DEFAULT 100,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME,
+                    UNIQUE (user)
+                )
+            """)
+
+            # Create payment_invoices table
+            user_cursor.execute("""
+                CREATE TABLE IF NOT EXISTS payment_invoices (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user VARCHAR(50) NOT NULL,
+                    order_id VARCHAR(100) NOT NULL,
+                    payment_id VARCHAR(100),
+                    amount DECIMAL(10, 2) NOT NULL,
+                    status VARCHAR(20) NOT NULL,
+                    plan_type VARCHAR(20) DEFAULT NULL,
+                    invoice_number VARCHAR(50) DEFAULT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            # Apply any schema migrations
+            migrate_database_schema(user_cursor, db_name)
+
+            # Commit transaction
+            user_conn.commit()
+            return True
+
+    except Error as e:
+        logger.error(f"Error creating tables in {db_name}: {e}")
+        if 'user_conn' in locals() and user_conn:
+            user_conn.rollback()
+        return False
+    finally:
+        if 'user_conn' in locals() and user_conn:
+            user_conn.close()
+
+def initialize_databases():
+    """Initialize all user databases with required tables and schema"""
+    with db_init_lock:  # Prevent concurrent initialization
+        logger.info("Starting database initialization...")
+
+        try:
+            # Always initialize the admin database first
+            initialize_admin_database()
+
+            # Connect to the admin DB and get all user DB configs
+            admin_conn = get_admin_connection()
+            if not admin_conn:
+                raise Exception("Failed to connect to admin database")
+
+            with admin_conn.cursor(dictionary=True) as admin_cursor:
+                admin_cursor.execute("""
+                    SELECT db_name, db_user, db_password, updated_at 
+                    FROM database_configs
+                """)
+                databases = {
+                    row['db_name']: {
+                        'user': row['db_user'],
+                        'password': row['db_password'],
+                        'trial_expires': row['updated_at']
+                    }
+                    for row in admin_cursor.fetchall()
+                }
+
+            root_conn = get_root_connection()
+            if not root_conn:
+                raise Exception("Failed to connect as root user")
+
+            # (Re-)create DBs and users, grant privileges
+            with root_conn.cursor() as root_cursor:
+                for db_name, creds in databases.items():
+                    try:
+                        # Create database if not exists
+                        root_cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}`")
+                        
+                        # Create user if not exists
+                        try:
+                            root_cursor.execute(
+                                "CREATE USER IF NOT EXISTS %s@'%%' IDENTIFIED BY %s",
+                                (creds['user'], creds['password'])
+                            )
+                        except Exception as e:
+                            logger.warning(f"User may already exist or password policy error for {creds['user']}: {e}")
+                        
+                        # Grant privileges
+                        root_cursor.execute(
+                            f"GRANT ALL PRIVILEGES ON `{db_name}`.* TO %s@'%%'",
+                            (creds['user'],)
+                        )
+                        root_cursor.execute("FLUSH PRIVILEGES")
+                        logger.info(f"Configured database {db_name} for user {creds['user']}")
+                        
+                        # Create tables in the database
+                        if not create_user_tables(db_name, creds['user'], creds['password']):
+                            logger.error(f"Failed to create tables in {db_name}")
+                            continue
+                            
+                        # Initialize user settings if they don't exist
+                        user_conn = connect_db(creds['user'], creds['password'], db_name)
+                        if user_conn:
+                            with user_conn.cursor() as user_cursor:
+                                user_cursor.execute("""
+                                    INSERT INTO user_settings (
+                                        user, membership_plan, membership_payment, 
+                                        logo_path, trial_end_date, updated_at
+                                    ) VALUES (%s, %s, %s, %s, %s, %s)
+                                    ON DUPLICATE KEY UPDATE
+                                        membership_plan = VALUES(membership_plan),
+                                        membership_payment = VALUES(membership_payment),
+                                        trial_end_date = VALUES(trial_end_date),
+                                        updated_at = VALUES(updated_at)
+                                """, (
+                                    creds['user'], 'Trial', 0.00, 'image/default_logo.png',
+                                    creds['trial_expires'], datetime.now()
+                                ))
+                                user_conn.commit()
+                            user_conn.close()
+                            
+                    except Exception as e:
+                        logger.error(f"Error setting up database {db_name}: {e}")
+                        continue
+                        
+                root_conn.commit()
+
+        except Exception as e:
+            logger.error(f"Database initialization failed: {e}")
+            logger.error(traceback.format_exc())
+            raise
+        finally:
+            if 'admin_conn' in locals() and admin_conn:
+                admin_conn.close()
+            if 'root_conn' in locals() and root_conn:
+                root_conn.close()
+
+                
+cleanup_problematic_database()  
+initialize_databases()
+
+import re
+import random
+import string
+from datetime import datetime, timedelta
+from flask import request, jsonify, render_template, url_for
+import bcrypt
+
+errors = []
+
+def clearErrors():
+    global errors
+    errors = []
+
+def showError(fieldId, message):
+    errors.append({'field': fieldId, 'message': message})
+
+def validateEmail(email):
+    if not email:
+        return 'Email address is required'
+    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    if not re.match(email_regex, email):
+        return 'Please enter a valid email address'
+    return None
+
+def validate_username(username):
+    if not username:
+        return 'Username is required'
+    if len(username) < 4 or len(username) > 20:
+        return 'Username must be between 4 and 20 characters long'
+    if not re.match(r'^[a-zA-Z]', username):
+        return 'Username must start with a letter'
+    if not re.match(r'^[a-zA-Z0-9_]+$', username):
+        return 'Username can only contain letters, numbers, and underscores'
+    if '__' in username:
+        return 'Username cannot contain consecutive underscores'
+    reserved = {'admin', 'root', 'administrator', 'test', 'user', 'guest', 'system', 'null', 'undefined'}
+    if username.lower() in reserved:
+        return 'This username is reserved and cannot be used'
+    return None
+
+def validate_password(password, username):
+    if not password:
+        return 'Password is required'
+    if len(password) < 8:
+        return 'Password must be at least 8 characters long'
+    if not re.search(r'[A-Z]', password):
+        return 'Password must contain at least one uppercase letter'
+    if not re.search(r'[a-z]', password):
+        return 'Password must contain at least one lowercase letter'
+    if not re.search(r'[0-9]', password):
+        return 'Password must contain at least one number'
+    if not re.search(r'[^A-Za-z0-9]', password):
+        return 'Password must contain at least one special character'
+    if password == username:
+        return 'Password cannot be the same as your username'
+    return None
+
+def generate_strong_password(length=16):
+    chars = string.ascii_letters + string.digits + "!@#$%^&*()"
+    while True:
+        password = ''.join(random.choice(chars) for _ in range(length))
+        if (any(c.islower() for c in password)
+            and any(c.isupper() for c in password)
+            and any(c.isdigit() for c in password)
+            and any(c in "!@#$%^&*()" for c in password)):
+            return password
+
+def create_user_database_and_grant(username, db_password, db_name, root_conn):
+    with root_conn.cursor() as root_cursor:
+        root_cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}`")
+        try:
+            root_cursor.execute(
+                "CREATE USER IF NOT EXISTS %s@'%%' IDENTIFIED BY %s",
+                (username, db_password)
+            )
+        except Exception as e:
+            logger.warning(f"User may already exist or password policy error: {e}")
+        root_cursor.execute(
+            f"GRANT ALL PRIVILEGES ON `{db_name}`.* TO %s@'%%'",
+            (username,)
+        )
+        root_cursor.execute("FLUSH PRIVILEGES")
+    root_conn.commit()
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'GET':
-        return render_template('register.html')
-        
-    data = request.form
-    email = data.get('email')
-    username = data.get('username')
-    password = data.get('password')
-    confirm_password = data.get('confirm_password')
-    membership_plan = data.get('membership_plan', 'monthly')
-        
-    # Validate input
-    if not all([email, username, password, confirm_password]):
-        return jsonify({'success': False, 'message': 'All fields are required'}), 400
-        
-    if password != confirm_password:
-        return jsonify({'success': False, 'message': 'Passwords do not match'}), 400
-        
-    if len(password) < 8:
-        return jsonify({'success': False, 'message': 'Password must be at least 8 characters'}), 400
-        
-    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-        return jsonify({'success': False, 'message': 'Invalid email format'}), 400
-        
-    admin_conn = get_admin_connection()
-    if not admin_conn:
-        return jsonify({'success': False, 'message': 'Database connection failed'}), 500
-        
-    cursor = admin_conn.cursor(dictionary=True)
-    try:
-        # First check if username already exists
-        cursor.execute("SELECT db_user FROM database_configs WHERE db_user = %s", (username,))
-        if cursor.fetchone():
-            return jsonify({'success': False, 'message': 'Username already exists. Please choose a different username.'}), 400
+    if request.method == 'POST':
+        data = request.get_json() if request.is_json else request.form
+        email = data.get('email', '').strip()
+        username = data.get('username', '').strip()
+        password = data.get('password', '')
+        confirm_password = data.get('confirm_password', '')
+        membership_plan = data.get('membership_plan', 'monthly')
+        clearErrors()
 
-        # Create database configuration
-        db_name = f"db_{username}"
-        db_password = password
-            
-        # Calculate trial expiration (7 days from now)
-        trial_start = datetime.now()
-        trial_end = trial_start + timedelta(days=7)
+        # --- PREVENT DUPLICATE USERNAMES ---
+        admin_conn = get_admin_connection()
+        if not admin_conn:
+            return jsonify({'success': False, 'message': 'Database connection failed.'}), 500
+        with admin_conn.cursor(dictionary=True) as admin_cursor:
+            # Check in admin_users table
+            admin_cursor.execute("SELECT 1 FROM admin_users WHERE username = %s", (username,))
+            if admin_cursor.fetchone():
+                return jsonify({'success': False, 'message': 'Username already exists.', 'field': 'username'}), 400
+            # Check in database_configs table
+            admin_cursor.execute("SELECT 1 FROM database_configs WHERE db_user = %s", (username,))
+            if admin_cursor.fetchone():
+                return jsonify({'success': False, 'message': 'DB user already exists.', 'field': 'username'}), 400
 
-        # Insert into database_configs
-        cursor.execute("""
-            INSERT INTO database_configs (db_name, db_user, db_password, updated_at)
-            VALUES (%s, %s, %s, %s)
-        """, (db_name, username, db_password, trial_end))
-        
-        admin_conn.commit()  # <-- THIS LINE IS ESSENTIAL FOR TABLE CREATION
+        # --- VALIDATION ---
+        email_error = validateEmail(email)
+        if email_error:
+            showError('email', email_error)
+        username_error = validate_username(username)
+        if username_error:
+            showError('username', username_error)
+        password_error = validate_password(password, username)
+        if password_error:
+            showError('password', password_error)
+        if password != confirm_password:
+            showError('confirm_password', 'Passwords do not match')
 
-        # Create MySQL user and database
-        root_conn = get_root_connection()
-        if not root_conn:
-            admin_conn.rollback()
-            return jsonify({'success': False, 'message': 'Failed to create database'}), 500
-                
-        root_cursor = root_conn.cursor()
+        if len(errors) > 0:
+            return jsonify({'success': False, 'message': 'Please fix the validation errors', 'errors': errors}), 400
+
+        root_conn, user_conn = None, None
         try:
-            # Create database
-            root_cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
-                
-            # Create user if not exists and grant privileges
-            root_cursor.execute(f"CREATE USER IF NOT EXISTS '{username}'@'localhost' IDENTIFIED BY '{password}'")
-            root_cursor.execute(f"GRANT ALL PRIVILEGES ON {db_name}.* TO '{username}'@'localhost'")
-            root_cursor.execute("FLUSH PRIVILEGES")
-            root_conn.commit()
-        except Error as e:
-            root_conn.rollback()
-            admin_conn.rollback()
-            return jsonify({'success': False, 'message': f'MySQL user creation failed: {str(e)}'}), 500
-        finally:
-            root_cursor.close()
-            root_conn.close()
-            
-        # Initialize the database tables for all users (including the new one)
-        try:
-            initialize_databases()
-        except Exception as e:
-            logger.error(f"Database initialization failed: {e}")
-            admin_conn.rollback()
-            return jsonify({'success': False, 'message': 'Database setup failed. Please contact support.'}), 500
-            
-        # Create/update user_settings record (just update, since row was inserted in initialize_databases)
-        user_conn = connect_db(username, password, db_name)
-        if not user_conn:
-            admin_conn.rollback()
-            return jsonify({'success': False, 'message': 'Failed to initialize user settings'}), 500
-                
-        user_cursor = user_conn.cursor()
-        try:
-            membership_payment = 699.00 if membership_plan == 'monthly' else 7999.00
+            db_password = generate_strong_password(16)
+            hashed_user_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            db_name = f"db_{re.sub(r'[^a-zA-Z0-9_]', '_', username.lower())}"
+            trial_start = datetime.now()
+            trial_end = trial_start + timedelta(days=7)
 
-            # Update the user_settings row (already created in initialize_databases)
-            user_cursor.execute("""
-                UPDATE user_settings 
-                SET membership_plan = %s,
-                    membership_payment = %s,
-                    logo_path = %s,
-                    trial_start_date = %s,
-                    trial_end_date = %s,
-                    payment_status = %s,
-                    updated_at = %s
-                WHERE user = %s
-            """, (
-                'Trial',
-                membership_payment,
-                'image/logo.png',
-                trial_start,
-                trial_end,
-                'active',  # Trial is active
-                datetime.now(),
-                username
-            ))
+            root_conn = get_root_connection()
+            if not root_conn:
+                return jsonify({'success': False, 'message': 'Root DB connection failed'}), 500
 
-            user_cursor.execute("""
-                INSERT INTO payment_invoices (user, order_id, payment_id, amount, status)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (
-                username,
-                f"TRIAL-{uuid.uuid4().hex[:8]}",
-                "TRIAL",
-                0.00,
-                "success"
-            ))
-                
-            user_conn.commit()
-            admin_conn.commit()  # Only commit admin changes after everything else succeeds
-                
+            # Create DB, user, grant privileges
+            create_user_database_and_grant(username, db_password, db_name, root_conn)
+
+            # Store DB password for backend use
+            with admin_conn.cursor() as admin_cursor:
+                admin_conn.autocommit = False
+                admin_cursor.execute(
+                    "INSERT INTO database_configs (db_name, db_user, db_password, updated_at) VALUES (%s, %s, %s, %s)",
+                    (db_name, username, db_password, trial_end)
+                )
+                admin_conn.commit()
+            # Store login password hash for authentication
+            with admin_conn.cursor() as admin_cursor:
+                admin_cursor.execute(
+                    "INSERT INTO admin_users (username, password) VALUES (%s, %s)",
+                    (username, hashed_user_password)
+                )
+                admin_conn.commit()
+
+            user_conn = connect_db(username, db_password, db_name)
+            if not user_conn:
+                raise Exception("Failed to connect to new user DB after creation.")
+            with user_conn.cursor() as user_cursor:
+                user_conn.autocommit = False
+                user_cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS user_settings (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user VARCHAR(50) NOT NULL,
+                        membership_plan VARCHAR(50) DEFAULT 'Trial',
+                        membership_payment DECIMAL(10, 2) DEFAULT 0.00,
+                        logo_path VARCHAR(255) DEFAULT 'image/default_logo.png',
+                        trial_start_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        trial_end_date DATETIME,
+                        subscription_start_date DATETIME,
+                        subscription_end_date DATETIME,
+                        payment_status VARCHAR(20) DEFAULT 'inactive',
+                        last_payment_date DATETIME,
+                        next_renewal_date DATETIME,
+                        max_students INT DEFAULT 100,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME,
+                        UNIQUE KEY (user)
+                    )
+                """)
+                user_cursor.execute("""
+                    INSERT INTO user_settings (
+                        user, membership_plan, membership_payment, logo_path, trial_start_date, 
+                        trial_end_date, payment_status, max_students, created_at, updated_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    username, 'Trial', 0.00, 'image/default_logo.png',
+                    trial_start, trial_end, 'active', 100, datetime.now(), datetime.now()
+                ))
+                user_conn.commit()
+
             return jsonify({
-                'success': True, 
-                'message': 'Registration successful',
+                'success': True,
+                'message': 'Registration successful! Your 7-day free trial has started.',
                 'redirect': url_for('login')
             })
-                
-        except Error as e:
-            user_conn.rollback()
-            admin_conn.rollback()
-            return jsonify({'success': False, 'message': f'Error creating user settings: {str(e)}'}), 500
+
+        except Exception as e:
+            logger.error(f"Registration error: {str(e)}")
+            if admin_conn: admin_conn.rollback()
+            if root_conn: root_conn.rollback()
+            if user_conn: user_conn.rollback()
+            return jsonify({'success': False, 'message': f'Registration failed: {str(e)}'}), 500
         finally:
-            user_cursor.close()
-            if user_conn:
-                user_conn.close()
-                
-    except Error as e:
-        admin_conn.rollback()
-        return jsonify({'success': False, 'message': f'Database error: {str(e)}'}), 500
-    finally:
-        cursor.close()
-        admin_conn.close()
+            if user_conn: user_conn.close()
+            if root_conn: root_conn.close()
+            if admin_conn: admin_conn.close()
+
+    return render_template('register.html')
+
+from flask import request, render_template, redirect, url_for, session, flash
+import bcrypt
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        DATABASES = get_databases()
-            
-        for db_name, creds in DATABASES.items():
-            if username == creds['user'] and password == creds['password']:
-                # Check trial expiration
-                admin_conn = get_admin_connection()
-                if admin_conn:
-                    cursor = admin_conn.cursor(dictionary=True)
-                    try:
-                        cursor.execute("""
-                            SELECT updated_at FROM database_configs 
-                            WHERE db_user = %s
-                        """, (username,))
-                        config = cursor.fetchone()
-                            
-                        if config and config['updated_at']:
-                            trial_expires = config['updated_at']
-                            if datetime.now() > trial_expires:
-                                session['trial_expired'] = True
-                                session['user'] = username
-                                return redirect(url_for('account', db=db_name))
-                    except Error as e:
-                        logger.error(f"Error checking trial period for {username}: {e}")
-                    finally:
-                        cursor.close()
-                        admin_conn.close()
-                    
-                else:
-                    logger.error(f"Failed to connect to admin database for user {username}")
-                    flash('Failed to connect to admin database', 'danger')
-                    return render_template('authentication/login.html')
-                    
-                session['user'] = username
-                session['password'] = password
-                session.permanent = True
-                return redirect(url_for('user_dashboard', db=db_name))
-            
-        flash('Invalid login credentials', 'danger')
-    return render_template('authentication/login.html')
+    if request.method == 'GET':
+        return render_template('authentication/login.html')
+
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '')
+
+    admin_conn = get_admin_connection()
+    try:
+        # 1. Look up login password hash for user
+        with admin_conn.cursor(dictionary=True) as admin_cursor:
+            admin_cursor.execute(
+                "SELECT password FROM admin_users WHERE username = %s", (username,))
+            row = admin_cursor.fetchone()
+            if not row or not bcrypt.checkpw(password.encode('utf-8'), row['password'].encode('utf-8')):
+                flash('Invalid username or password', 'danger')
+                return redirect(url_for('login'))
+
+            # 2. Look up DB info for backend usage
+            admin_cursor.execute(
+                "SELECT db_name, db_user, db_password FROM database_configs WHERE db_user = %s", (username,))
+            db_row = admin_cursor.fetchone()
+            if not db_row:
+                flash('Database not found for user', 'danger')
+                return redirect(url_for('login'))
+
+            session['user'] = username
+            session['db_name'] = db_row['db_name']
+            # DO NOT store db_password in session
+
+            return redirect(url_for('analytics_dashboard', db=db_row['db_name']))
+
+    except Exception as e:
+        logger.error(f"Login error for {username}: {e}")
+        flash('Internal server error during login.', 'danger')
+        return redirect(url_for('login'))
+    finally:
+        if admin_conn:
+            admin_conn.close()
 
 def validate_schema(connection):
     required_columns = {
@@ -1059,6 +1319,202 @@ def payment_verify(db):
         return jsonify({
             'success': True,
             'message': 'Payment verified and membership updated!',
+            'invoice_number': invoice_number
+        })
+
+    except Exception as e:
+        if 'connection' in locals() and connection:
+            connection.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'connection' in locals():
+            connection.close()
+
+@app.route('/create_subscription', methods=['POST'])
+def create_subscription():
+    db = request.args.get('db')
+    if not db:
+        return jsonify({'success': False, 'message': 'Database parameter is required'}), 400
+
+    data = request.json
+    plan_id = data.get('plan_id')
+    plan_type = data.get('plan_type')
+    
+    if not plan_id or not plan_type:
+        return jsonify({'success': False, 'message': 'Missing plan_id or plan_type'}), 400
+
+    try:
+        # Get customer details from your database
+        DATABASES = get_databases()
+        if db not in DATABASES:
+            return jsonify({'success': False, 'message': f'Invalid database {db}'}), 400
+
+        connection = connect_db(session['user'], DATABASES[db]['password'], db)
+        if not connection:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+        cursor = connection.cursor()
+        cursor.execute("SELECT email, phone FROM user_settings WHERE user = %s", (session['user'],))
+        user_data = cursor.fetchone()
+        
+        if not user_data:
+            return jsonify({'success': False, 'message': 'User not found in database'}), 404
+
+        email, phone = user_data
+
+        # Create subscription payload
+        subscription_data = {
+            'plan_id': plan_id,
+            'total_count': 12 if plan_type == 'monthly' else 1,  # 12 months for monthly, 1 for yearly
+            'customer_notify': 1,
+            'notes': {
+                'plan_type': plan_type,
+                'user': session['user'],
+                'db': db
+            }
+        }
+
+        # Add customer details if available
+        if email:
+            subscription_data['customer_email'] = email
+        if phone:
+            subscription_data['customer_phone'] = phone
+
+        # Create subscription
+        subscription = razorpay_client.subscription.create(subscription_data)
+            
+        return jsonify({
+            'success': True,
+            'subscription_id': subscription['id'],
+            'status': subscription['status']
+        })
+
+    except razorpay.errors.BadRequestError as e:
+        return jsonify({
+            'success': False,
+            'message': f'Invalid request: {str(e)}',
+            'error_code': 400
+        }), 400
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': 'Internal server error',
+            'error': str(e)
+        }), 500
+
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'connection' in locals():
+            connection.close()
+
+@app.route('/subscription_verify', methods=['POST'])
+def subscription_verify():
+    if not session.get('user'):
+        return jsonify({'success': False, 'message': 'Session expired'}), 401
+
+    payment_id = request.json.get('razorpay_payment_id')
+    subscription_id = request.json.get('razorpay_subscription_id')
+    signature = request.json.get('razorpay_signature')
+    plan_id = request.json.get('plan_id')
+    plan_type = request.json.get('plan_type')
+
+    if not all([payment_id, subscription_id, signature, plan_id, plan_type]):
+        return jsonify({'success': False, 'message': 'Missing payment details'}), 400
+
+    try:
+        # Verify payment with Razorpay
+        razorpay_client.utility.verify_payment_signature({
+            'razorpay_subscription_id': subscription_id,
+            'razorpay_payment_id': payment_id,
+            'razorpay_signature': signature
+        })
+
+        DATABASES = get_databases()
+        if db not in DATABASES:
+            return jsonify({'success': False, 'message': 'Invalid database'}), 400
+
+        connection = connect_db(session['user'], DATABASES[db]['password'], db)
+        if not connection:
+            return jsonify({'success': False, 'message': 'Database connection failed'}), 500
+
+        cursor = connection.cursor()
+
+        # Determine amount and renewal date based on plan type
+        amount = 699.00 if plan_type == 'monthly' else 6999.00
+        now = datetime.now()
+        renewal = now + timedelta(days=30 if plan_type == 'monthly' else 365)
+
+        # Check if payment_status column exists (for backward compatibility)
+        cursor.execute("SHOW COLUMNS FROM user_settings LIKE 'payment_status'")
+        has_payment_status = cursor.fetchone() is not None
+
+        # Update user_settings
+        if has_payment_status:
+            cursor.execute("""
+                UPDATE user_settings
+                SET membership_plan = %s,
+                    membership_payment = %s,
+                    payment_status = 'active',
+                    last_payment_date = %s,
+                    next_renewal_date = %s,
+                    updated_at = %s
+                WHERE user = %s
+            """, (
+                'Monthly' if plan_type == 'monthly' else 'Yearly',
+                amount,
+                now,
+                renewal,
+                now,
+                session['user']
+            ))
+        else:
+            cursor.execute("""
+                UPDATE user_settings
+                SET membership_plan = %s,
+                    membership_payment = %s,
+                    last_payment_date = %s,
+                    next_renewal_date = %s,
+                    updated_at = %s
+                WHERE user = %s
+            """, (
+                'Monthly' if plan_type == 'monthly' else 'Yearly',
+                amount,
+                now,
+                renewal,
+                now,
+                session['user']
+            ))
+
+        # Generate invoice number
+        invoice_number = f"INV-{now.strftime('%Y%m%d')}-{payment_id[:6].upper()}"
+
+        # Record invoice in payment_invoices
+        cursor.execute("""
+            INSERT INTO payment_invoices 
+            (user, order_id, payment_id, subscription_id, amount, status, plan_type, invoice_number, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            session['user'],
+            subscription_id,  # Using subscription_id as order_id for subscriptions
+            payment_id,
+            subscription_id,
+            amount,
+            'success',
+            'Monthly' if plan_type == 'monthly' else 'Yearly',
+            invoice_number,
+            now
+        ))
+
+        connection.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Subscription verified and membership updated!',
             'invoice_number': invoice_number
         })
 
@@ -1749,10 +2205,22 @@ def user_dashboard(db):
         flash('Invalid database selected', 'danger')
         return redirect(url_for('login'))
 
-    connection = connect_db(user, DATABASES[db]['password'], db)
-    if connection:
+    try:
+        connection = connect_db(user, DATABASES[db]['password'], db)
+        if not connection:
+            flash('Failed to connect to the database', 'danger')
+            return redirect(url_for('login'))
+
         cursor = connection.cursor(dictionary=True)
         try:
+            # Check if student_details table exists
+            cursor.execute("SHOW TABLES LIKE 'student_details'")
+            if not cursor.fetchone():
+                # Initialize database tables if they don't exist
+                initialize_databases()
+                flash('Database tables were missing and have been recreated', 'warning')
+                return redirect(url_for('user_dashboard', db=db))
+
             cursor.execute("""
                 SELECT 
                     enroll_no,
@@ -1783,8 +2251,8 @@ def user_dashboard(db):
             students=students,
             logo_path=logo_path
         )
-    else:
-        flash('Failed to connect to the database', 'danger')
+    except Exception as e:
+        flash(f'Database error: {str(e)}', 'danger')
         return redirect(url_for('login'))
 
 @app.route('/application_form/<db>', methods=['GET', 'POST'])
@@ -3349,5 +3817,10 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
+    # First initialize the admin database
+    initialize_admin_database()
+    
+    # Then initialize all other databases
     initialize_databases()
+    
     app.run(host='0.0.0.0', port=5000, debug=True) 
